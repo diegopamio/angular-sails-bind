@@ -1,4 +1,4 @@
-/*! angular-sails-bind - v0.0.1 - 2014-05-20
+/*! angular-sails-bind - v0.0.5 - 2014-05-20
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*global io:false */
@@ -10,9 +10,9 @@
  * @return {object} Object of methods
  */
 
-var app = angular.module("sang", []);
+var app = angular.module("ngSailsBind", []);
 
-app.factory('$sang', [
+app.factory('$sailsBind', [
     '$socket',
     function ($socket) {
         'use strict';

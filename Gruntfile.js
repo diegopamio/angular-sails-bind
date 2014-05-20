@@ -30,6 +30,13 @@ module.exports = function(grunt) {
         dest: 'dist/<%= pkg.name %>.min.js'
       }
     },
+    bump: {
+        options: {
+            commitFiles: ['-a'],
+            files: ['package.json', 'bower.json'],
+            pushTo: 'origin'
+        }
+    },
     jshint: {
       options: {
         curly: true,
@@ -66,5 +73,5 @@ module.exports = function(grunt) {
 
   // Default task.
   grunt.registerTask('default', ['jshint', 'concat', 'uglify']);
-  grunt.registerTask('bump', ['bump']);
+  grunt.registerTask('release', ['default','bump']);
 };
