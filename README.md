@@ -33,7 +33,7 @@ app.controller("ItemsCtrl", function ($scope, $sailsBind) {
 
 ```html
 <div ng-controller="ItemsCtrl">
-  <input ng-model="newItem.name"/><a href="" ng-click="items.push(newItem)"></a>Add New
+  <input ng-model="newItem.name"/><a href="" ng-click="items.push(newItem);newItem={}"></a>Add New
   <ul>
     <li ng-repeat="item in items">{{item.name}} <a href="" ng-click="items.splice(items.indexOf(item), 1)">remove</a></li>
   </ul>

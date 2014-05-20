@@ -1,4 +1,4 @@
-/*! angular-sails-bind - v0.0.5 - 2014-05-20
+/*! angular-sails-bind - v0.0.7 - 2014-05-20
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*global io:false */
