@@ -27,6 +27,7 @@ app.controller("ItemsCtrl", function ($scope, $sailsBind) {
   *        in the angular "items" model.
   *     4. Watch the "items" model for collection changes in angular (add and removal of items
   *        and send them to the backend using socket.
+  **/
   $sailsBind("item", $scope);
 ```
 
