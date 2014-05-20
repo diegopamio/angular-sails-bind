@@ -51,3 +51,14 @@ app.controller("ItemsCtrl", function ($scope, $sailsBind) {
   </ul>
 </div>
 ```
+
+Getting a subset of the model:
+
+You can filter the initial model content by adding a third parameter to the $sailsBind function (thanks @maik_tailor for the request). 
+
+```javascript
+   $sailsBind("item", $scope, {"name": {"contains": "Foo"}};
+```
+
+This third parameter is a json that follows the "where" clause syntax, as documented in sails' find call: 
+[http://beta.sailsjs.org/#!documentation/reference/Blueprints/FindRecords.html]()
