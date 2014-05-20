@@ -3,6 +3,18 @@ Angular Sails Bind
 
 An AngularJS service to bind Angular models with sailsjs backend models using socket.io.
 
+Add it as a dependency to your angular app, and then bind any model IN JUST ONE LINE!!!!!
+
+```javascript
+  $sailsBind("<your model name here>", $scope);
+```
+
+What it does:
+
+* Creates the model inside the $scope for you.
+* Retrieves the model data from the backend using socket.
+* Watches for changes made by the user in the UI and updates the backend immediately.
+* Watches for changes made in the backend and updates the UI immediately.
 
 Installation:
 
