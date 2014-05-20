@@ -54,7 +54,7 @@ app.controller("ItemsCtrl", function ($scope, $sailsBind) {
 
 Getting a subset of the model:
 
-You can filter the initial model content by adding a third parameter to the $sailsBind function (thanks @maik_tailor for the request). 
+You can filter the initial model content by adding a third parameter to the $sailsBind function (thanks @Shalotelli for the request). 
 
 ```javascript
    $sailsBind("item", $scope, {"name": {"contains": "Foo"}};
