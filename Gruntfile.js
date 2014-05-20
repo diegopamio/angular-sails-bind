@@ -11,6 +11,14 @@ module.exports = function(grunt) {
       '* Copyright (c) <%= grunt.template.today("yyyy") %> <%= pkg.author.name %>;' +
       ' Licensed <%= _.pluck(pkg.licenses, "type").join(", ") %> */\n',
     // Task configuration.
+    jsdoc : {
+      dist : {
+          src: ['lib/*.js', 'test/*.js'],
+          options: {
+              destination: 'doc'
+          }
+      }
+    },
     concat: {
       options: {
         banner: '<%= banner %>',
@@ -70,8 +78,9 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-contrib-jshint');
   grunt.loadNpmTasks('grunt-contrib-watch');
   grunt.loadNpmTasks('grunt-bump');
+  grunt.loadNpmTasks('grunt-jsdoc');
 
   // Default task.
-  grunt.registerTask('default', ['jshint', 'concat', 'uglify']);
+  grunt.registerTask('default', ['jsdoc', 'jshint', 'concat', 'uglify']);
   grunt.registerTask('release', ['default','bump']);
 };

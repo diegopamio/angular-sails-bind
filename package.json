@@ -1,6 +1,6 @@
 {
   "name": "angular-sails-bind",
-  "version": "0.0.7",
+  "version": "0.0.8",
   "description": "An angular service to bind sailsjs models to angular models",
   "keywords": [
     "sailsjs",
@@ -40,6 +40,8 @@
     "grunt-contrib-uglify": "~0.4.0",
     "grunt-contrib-jshint": "~0.10.0",
     "grunt-contrib-watch": "~0.6.1",
-    "grunt-bump": "0.0.14"
+    "grunt-bump": "0.0.14",
+    "jsdoc": "~3.3.0-alpha5",
+    "grunt-jsdoc": "~0.5.4"
   }
 }
