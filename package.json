@@ -1,6 +1,6 @@
 {
   "name": "angular-sails-bind",
-  "version": "0.0.9",
+  "version": "0.0.10",
   "description": "An angular service to bind sailsjs models to angular models",
   "keywords": [
     "sailsjs",
