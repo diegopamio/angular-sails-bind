@@ -1,4 +1,4 @@
-/*! angular-sails-bind - v0.0.11 - 2014-05-26
+/*! angular-sails-bind - v0.0.11 - 2014-05-27
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*! angular-sails-bind - v0.0.7 - 2014-05-20
@@ -49,7 +49,7 @@ app.factory('$sailsBind', [
                             updated: function () {
                                 var updatedElement = $scope[resourceName + "s"].find(
                                     function (element) {
-                                        return parseInt(message.id) === parseInt(element.id);
+                                        return parseInt(message.id, 10) === parseInt(element.id, 10);
                                     }
                                 );
                                 angular.extend(updatedElement, message.data);
@@ -74,9 +74,9 @@ app.factory('$sailsBind', [
                                     resourceName + 's' + '[' + $scope[resourceName + "s"].indexOf(item) + ']',
                                 function (newValue, oldValue) {
                                     if (oldValue && newValue) {
-                                        if (!angular.equals(oldValue, newValue) &&
-                                            parseInt(oldValue.id) === parseInt(newValue.id) &&
-                                            oldValue.updatedAt !== newValue.updatedAt) {
+                                        if (!angular.equals(oldValue, newValue) && // is in the database and is not new
+                                            parseInt(oldValue.id, 10) === parseInt(newValue.id, 10) && //not a shift
+                                            oldValue.updatedAt === newValue.updatedAt) { //is not an update FROM backend
                                             $socket.post('/' + resourceName + '/update/' + oldValue.id,
                                                 angular.copy(newValue));
                                         }
@@ -255,43 +255,6 @@ app.factory('$socket', [
     }
 ]);
 
-if (!Array.prototype.find) {
-    Object.defineProperty(Array.prototype, 'find', {
-        enumerable: false,
-        configurable: true,
-        writable: true,
-        value: function(predicate) {
-            if (this == null) {
-                throw new TypeError('Array.prototype.find called on null or undefined');
-            }
-            if (typeof predicate !== 'function') {
-                throw new TypeError('predicate must be a function');
-            }
-            var list = Object(this);
-            var length = list.length >>> 0;
-            var thisArg = arguments[1];
-            var value;
-
-            for (var i = 0; i < length; i++) {
-                if (i in list) {
-                    value = list[i];
-                    if (predicate.call(thisArg, value, i, list)) {
-                        return value;
-                    }
-                }
-            }
-            return undefined;
-        }
-    });
-}
-
-if (!Array.prototype.diff) {
-    Array.prototype.diff = function (a) {
-        return this.filter(function (i) {
-            return a.indexOf(i) < 0;
-        });
-    };
-}
 if (!Array.prototype.find) {
     Object.defineProperty(Array.prototype, 'find', {
         enumerable: false,
