@@ -21,6 +21,9 @@ Installation:
 ```shell
 bower install angular-sails-bind
 ```
+Code Quality
+------------
+[![Code Climate Rating](https://codeclimate.com/github/diegopamio/angular-sails-bind.png)](https://codeclimate.com/github/diegopamio/angular-sails-bind)
 
 Usage
 -----

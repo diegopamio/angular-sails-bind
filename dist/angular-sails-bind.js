@@ -1,6 +1,9 @@
-/*! angular-sails-bind - v0.0.12 - 2014-05-27
+/*! angular-sails-bind - v0.0.13 - 2014-05-29
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2014 Diego Pamio; Licensed MIT */
+/*! angular-sails-bind - v0.0.11 - 2014-05-27
+ * https://github.com/diegopamio/angular-sails-bind
+ * Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*! angular-sails-bind - v0.0.7 - 2014-05-20
  * https://github.com/diegopamio/angular-sails-bind
  * Copyright (c) 2014 Diego Pamio; Licensed MIT */
@@ -102,7 +105,9 @@ app.factory('$sailsBind', [
                     addedElements.forEach(function (item) {
                         if (!item.id) { //if is a brand new item w/o id from the database
                             $socket.put('/' + resourceName + '/create/', item, function (data) {
-                                item.id = data.id;
+                                $socket.get("/" + resourceName + "/" + data.id ).then(function (newData) {
+                                    angular.extend(item, newData);
+                                });
                             });
                         }
                         addCollectionWatchersToSubitemsOf(addedElements);
