@@ -1,4 +1,4 @@
-/*! angular-sails-bind - v0.0.13 - 2014-05-29
+/*! angular-sails-bind - v0.2.0 - 2014-06-07
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*! angular-sails-bind - v0.0.11 - 2014-05-27
@@ -21,7 +21,8 @@ var app = angular.module("ngSailsBind", []);
 
 app.factory('$sailsBind', [
     '$socket',
-    function ($socket) {
+    '$q',
+    function ($socket, $q) {
         'use strict';
         /**
          * This function basically does three things:
@@ -36,84 +37,96 @@ app.factory('$sailsBind', [
          *        what you can send.
          */
         var bind = function (resourceName, $scope, subset) {
-            (function () {
-                //1. Get the initial data into the newly created model.
-                $socket.get("/" + resourceName, subset).then(function (data) {
-                    $scope[resourceName + "s"] = data;
-                });
+            var defer_bind = new $q.defer();
+            //1. Get the initial data into the newly created model.
+            var requestEnded = $socket.get("/" + resourceName, subset);
 
-                //2. Hook the socket events to update the model.
-                $socket.on(resourceName, function (message) {
-                    var elements = $scope[resourceName + "s"],
-                        actions = {
-                            created: function () {
-                                $scope[resourceName + "s"].push(message.data);
-                            },
-                            updated: function () {
-                                var updatedElement = $scope[resourceName + "s"].find(
-                                    function (element) {
-                                        return parseInt(message.id, 10) === parseInt(element.id, 10);
-                                    }
-                                );
-                                angular.extend(updatedElement, message.data);
-                            },
-                            destroyed: function () {
-                                var deletedElement = $scope[resourceName + "s"].find(
-                                    function (element) {
-                                        return element.id === message.id;
-                                    }
-                                );
-                                elements.splice(elements.indexOf(deletedElement), 1);
-                            }
-                        };
-                    actions[message.verb]();
-                });
+            requestEnded.then(function (data) {
+                $scope[resourceName + "s"] = data;
+                defer_bind.resolve();
+            });
 
-                //3. Watch the model for changes and send them to the backend using socket.
-                $scope.$watchCollection(resourceName + "s", function (newValues, oldValues) {
-                    function addCollectionWatchersToSubitemsOf(model) {
-                        model.forEach(function (item) {
-                            $scope.$watchCollection(
-                                    resourceName + 's' + '[' + $scope[resourceName + "s"].indexOf(item) + ']',
-                                function (newValue, oldValue) {
-                                    if (oldValue && newValue) {
-                                        if (!angular.equals(oldValue, newValue) && // is in the database and is not new
-                                            parseInt(oldValue.id, 10) === parseInt(newValue.id, 10) && //not a shift
-                                            oldValue.updatedAt === newValue.updatedAt) { //is not an update FROM backend
-                                            $socket.post('/' + resourceName + '/update/' + oldValue.id,
-                                                angular.copy(newValue));
-                                        }
-                                    }
+            //2. Hook the socket events to update the model.
+            $socket.on(resourceName, function (message) {
+                var elements = $scope[resourceName + "s"],
+                    actions = {
+                        created: function () {
+                            $scope[resourceName + "s"].push(message.data);
+                        },
+                        updated: function () {
+                            var updatedElement = $scope[resourceName + "s"].find(
+                                function (element) {
+                                    return parseInt(message.id, 10) === parseInt(element.id, 10);
                                 }
                             );
-                        });
-                    }
-
-                    if (!oldValues && newValues) { //if is the first initial load
-                        addCollectionWatchersToSubitemsOf(newValues);
-                    }
-                    var addedElements, removedElements;
-                    newValues = newValues || [];
-                    oldValues = oldValues || [];
-                    addedElements =  newValues.diff(oldValues);
-                    removedElements = oldValues.diff(newValues);
-
-                    removedElements.forEach(function (item) {
-                        $socket.remove('/' + resourceName + '/destroy/' + item.id);
-                    });
-
-                    addedElements.forEach(function (item) {
-                        if (!item.id) { //if is a brand new item w/o id from the database
-                            $socket.put('/' + resourceName + '/create/', item, function (data) {
-                                $socket.get("/" + resourceName + "/" + data.id ).then(function (newData) {
-                                    angular.extend(item, newData);
-                                });
-                            });
+                            angular.extend(updatedElement, message.data);
+                        },
+                        destroyed: function () {
+                            var deletedElement = $scope[resourceName + "s"].find(
+                                function (element) {
+                                    return parseInt(element.id, 10) === parseInt(message.id, 10);
+                                }
+                            );
+                            if (deletedElement) {
+                                elements.splice(elements.indexOf(deletedElement), 1);
+                            }
                         }
-                        addCollectionWatchersToSubitemsOf(addedElements);
+                    };
+                actions[message.verb]();
+            });
+
+            //3. Watch the model for changes and send them to the backend using socket.
+            $scope.$watchCollection(resourceName + "s", function (newValues, oldValues) {
+                function addCollectionWatchersToSubitemsOf(model) {
+                    model.forEach(function (item) {
+                        $scope.$watchCollection(
+                                resourceName + 's' + '[' + $scope[resourceName + "s"].indexOf(item) + ']',
+                            function (newValue, oldValue) {
+                                if (oldValue && newValue) {
+                                    if (!angular.equals(oldValue, newValue) && // is in the database and is not new
+                                        parseInt(oldValue.id, 10) === parseInt(newValue.id, 10) && //not a shift
+                                        oldValue.updatedAt === newValue.updatedAt) { //is not an update FROM backend
+                                        $socket.post('/' + resourceName + '/update/' + oldValue.id,
+                                            angular.copy(newValue));
+                                    }
+                                }
+                            }
+                        );
+                    });
+                }
+
+                if (!oldValues && newValues) { //if is the first initial load
+                    addCollectionWatchersToSubitemsOf(newValues);
+                }
+                var addedElements, removedElements;
+                newValues = newValues || [];
+                oldValues = oldValues || [];
+                addedElements =  newValues.diff(oldValues);
+                removedElements = oldValues.diff(newValues);
+
+                removedElements.forEach(function (item) {
+                    $socket.get("/" + resourceName + "?id=" + item.id ).then(function (itemIsOnBackend, error) {
+                        if (itemIsOnBackend && !itemIsOnBackend.error) {
+                            $socket.remove('/' + resourceName + '/destroy/' + item.id);
+                        }
+                    }, function(error) {
+                        $socket.remove('/' + resourceName + '/destroy/' + item.id);
+
                     });
                 });
-            }());
+
+                addedElements.forEach(function (item) {
+                    if (!item.id) { //if is a brand new item w/o id from the database
+                        $socket.put('/' + resourceName + '/create/', item, function (data) {
+                            $socket.get("/" + resourceName + "/" + data.id ).then(function (newData) {
+                                angular.extend(item, newData);
+                            });
+                        });
+                    }
+                    addCollectionWatchersToSubitemsOf(addedElements);
+                });
+            });
+            return defer_bind.promise;
         };
         return {
             bind: bind
@@ -151,15 +164,15 @@ app.factory('$socket', [
                 additional.cache = additional.cache || false;
 
                 if ($cache[url] && additional.cache) {
-                    defer.resolve($cache[url]);
+                    $rootScope.$apply(defer.resolve($cache[url]));
                 } else {
                     delete additional.cache;
 
                     io.socket.request(url, additional, function (res) {
                         // Update cache
                         $cache[url] = res;
-
-                        defer.resolve(res);
+                        $rootScope.$apply(defer.resolve(res));
+                        //defer.resolve(res)
                     });
                 }
 
