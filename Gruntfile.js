@@ -144,7 +144,7 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-connect');
 
   // Default task.
-  grunt.registerTask('default', ['connect', 'jshint', 'concat', 'uglify', 'saucelabs-mocha', 'coveralls']);
+  grunt.registerTask('default', ['connect', 'jshint', 'concat', 'uglify', 'karma', 'coveralls']);
   grunt.registerTask('test', ["connect", "saucelabs-mocha",'coveralls']);
   grunt.registerTask('release', ['default','bump']);
 };

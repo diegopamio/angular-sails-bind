@@ -2,7 +2,31 @@
 // Generated on Thu May 29 2014 22:32:20 GMT-0300 (ART)
 
 module.exports = function(config) {
-  config.set({
+    var customLaunchers = {
+        sl_chrome: {
+            base: 'SauceLabs',
+            browserName: 'chrome',
+            platform: 'Windows 7'
+        },
+        sl_firefox: {
+            base: 'SauceLabs',
+            browserName: 'firefox',
+            version: '27'
+        },
+        sl_ios_safari: {
+            base: 'SauceLabs',
+            browserName: 'iphone',
+            platform: 'OS X 10.9',
+            version: '7.1'
+        },
+        sl_ie_11: {
+            base: 'SauceLabs',
+            browserName: 'internet explorer',
+            platform: 'Windows 8.1',
+            version: '11'
+        }
+    };
+    config.set({
 
     // base path, that will be used to resolve files and exclude
     basePath: '',
@@ -19,7 +43,8 @@ module.exports = function(config) {
       'karma-chai-plugins',
       'karma-coverage',
       'karma-mocha-reporter',
-      'karma-htmlfile-reporter'
+      'karma-htmlfile-reporter',
+      'karma-sauce-launcher'
     ],
     preprocessors : {
         'lib/*.js': 'coverage'
@@ -41,7 +66,7 @@ module.exports = function(config) {
 
     // test results reporter to use
     // possible values: 'dots', 'progress', 'junit', 'growl', 'coverage'
-    reporters: ['coverage', 'mocha', 'html'],
+    reporters: ['coverage', 'mocha', 'html', 'saucelabs'],
     htmlReporter: {
       outputFile: 'test/report/resuts.html'
     },
