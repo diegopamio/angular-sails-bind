@@ -64,5 +64,8 @@
     "karma-mocha-reporter": "^0.2.5",
     "mocha": "~1.20.0",
     "mocha-lcov-reporter": "0.0.1"
+  },
+  "scripts" : {
+      "postinstall": "node_modules/.bin/bower install"
   }
 }

@@ -1,6 +1,6 @@
 /*global module:false*/
 /*global process:false*/
-module.exports = function(grunt) {
+module.exports = function (grunt) {
     var browsers = [{
         browserName: "firefox",
         version: "19",
@@ -107,26 +107,6 @@ module.exports = function(grunt) {
         tasks: ['jshint:gruntfile','karma']
       }
     },
-      docular: {
-          baseUrl: 'http://localhost:8080', //base tag used by Angular
-          showAngularDocs: false, //parse and render Angular documentation
-          showDocularDocs: false, //parse and render Docular documentation
-          docAPIOrder: ['api'], //order to load ui resources
-          groups: [
-              {
-                  groupTitle: 'Angular Sails Bind Library Docs', //Title used in the UI
-                  groupId: 'angular-sails-bind', //identifier and determines directory
-                  groupIcon: 'icon-book', //Icon to use for this group
-                  sections: [
-                      {
-                          id: "api",
-                          title: "angular-sails-bind API",
-                          scripts: ["lib/"]
-                      }
-                  ]
-              }
-          ] //groups of documentation to parse
-      },
       connect: {
           server: {
               options: {
