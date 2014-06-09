@@ -118,7 +118,7 @@ module.exports = function (grunt) {
       'saucelabs-mocha': {
           all: {
               options: {
-                  urls: ["http://127.0.0.1:9999/test-mocha/test/browser/opts.html"],
+                  urls: ["http://127.0.0.1:9999/debug"],
                   tunnelTimeout: 5,
                   build: process.env.CI_BUILD_NUMBER || '1303',
                   concurrency: 3,
