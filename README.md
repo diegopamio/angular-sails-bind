@@ -23,7 +23,15 @@ bower install angular-sails-bind
 ```
 Code Quality
 ------------
+
+Static Analysis:
+
 [![Code Climate Rating](https://codeclimate.com/github/diegopamio/angular-sails-bind.png)](https://codeclimate.com/github/diegopamio/angular-sails-bind)
+
+Code Coverage with Unit tests:
+
+[![Coverage Status](https://coveralls.io/repos/diegopamio/angular-sails-bind/badge.png?branch=master)](https://coveralls.io/r/diegopamio/angular-sails-bind?branch=master)
+
 
 Build Status
 ------------
