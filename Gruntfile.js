@@ -135,12 +135,13 @@ module.exports = function(grunt) {
               }
           }
       },
+      build_number: process.env.CI_BUILD_NUMBER,
       'saucelabs-mocha': {
           all: {
               options: {
                   urls: ["http://127.0.0.1:9999/test-mocha/test/browser/opts.html"],
                   tunnelTimeout: 5,
-                  build: process.env.CI_BUILD_NUMBER,
+                  build: '<%= build_number %>',
                   concurrency: 3,
                   browsers: browsers,
                   testname: "mocha tests",
