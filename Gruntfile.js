@@ -120,7 +120,7 @@ module.exports = function (grunt) {
               options: {
                   urls: ["http://127.0.0.1:9999/test-mocha/test/browser/opts.html"],
                   tunnelTimeout: 5,
-                  build: process.env.CI_BUILD_NUMBER,
+                  build: process.env.CI_BUILD_NUMBER || '1303',
                   concurrency: 3,
                   browsers: browsers,
                   testname: "mocha tests",
@@ -144,7 +144,7 @@ module.exports = function (grunt) {
   grunt.loadNpmTasks('grunt-contrib-connect');
 
   // Default task.
-  grunt.registerTask('default', ['docular', 'jshint', 'concat', 'uglify', 'karma', 'coveralls']);
+  grunt.registerTask('default', ['connect', 'jshint', 'concat', 'uglify', 'saucelabs-mocha', 'coveralls']);
   grunt.registerTask('test', ["connect", "saucelabs-mocha",'coveralls']);
   grunt.registerTask('release', ['default','bump']);
 };
