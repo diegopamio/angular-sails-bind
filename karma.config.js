@@ -63,7 +63,9 @@ module.exports = function(config) {
       
     ],
 
-
+        sauceLabs: {
+            testName: 'Web App Unit Tests'
+        },
     // test results reporter to use
     // possible values: 'dots', 'progress', 'junit', 'growl', 'coverage'
     reporters: ['coverage', 'mocha', 'html', 'saucelabs'],
