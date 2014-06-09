@@ -23,7 +23,7 @@ module.exports = function(grunt) {
         platform: "Windows 2008",
         version: "12"
     }]
-        ,build_number = process.env.CI_BUILD_NUMBER,
+        ,build_number = process.env.CI_BUILD_NUMBER;
   // Project configuration.
   grunt.initConfig({
     // Metadata.
