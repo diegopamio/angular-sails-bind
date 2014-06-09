@@ -22,8 +22,7 @@ module.exports = function(grunt) {
         browserName: "opera",
         platform: "Windows 2008",
         version: "12"
-    }]
-        ,build_number = process.env.CI_BUILD_NUMBER;
+    }];
   // Project configuration.
   grunt.initConfig({
     // Metadata.
@@ -140,14 +139,14 @@ module.exports = function(grunt) {
               options: {
                   urls: ["http://127.0.0.1:9999/test-mocha/test/browser/opts.html"],
                   tunnelTimeout: 5,
-                  build: '<%= build_number %>',
+                  build: process.env.CI_BUILD_NUMBER,
                   concurrency: 3,
                   browsers: browsers,
                   testname: "mocha tests",
                   tags: ["master"]
               }
           }
-      },
+      }
   });
 
   // These plugins provide necessary tasks.
@@ -159,10 +158,12 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-jsdoc');
   grunt.loadNpmTasks('grunt-karma');
   grunt.loadNpmTasks('grunt-karma-coveralls');
-  grunt.loadNpmTasks('grunt-docular');
+    grunt.loadNpmTasks('grunt-docular');
+    grunt.loadNpmTasks('grunt-saucelabs');
+  grunt.loadNpmTasks('grunt-contrib-connect');
 
   // Default task.
   grunt.registerTask('default', ['docular', 'jshint', 'concat', 'uglify', 'karma', 'coveralls']);
-  grunt.registerTas('test', ["connect", "saucelabs-mocha"]);
+  grunt.registerTask('test', ["connect", "saucelabs-mocha"]);
   grunt.registerTask('release', ['default','bump']);
 };
