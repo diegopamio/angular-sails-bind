@@ -96,7 +96,7 @@ module.exports = function (grunt) {
           options: {
               debug: true,
               coverage_dir: 'test/coverage',
-              dryRun: true,
+              dryRun: false,
               force: true,
               recursive: true
           }
@@ -145,6 +145,6 @@ module.exports = function (grunt) {
 
   // Default task.
   grunt.registerTask('default', ['docular', 'jshint', 'concat', 'uglify', 'karma', 'coveralls']);
-  grunt.registerTask('test', ["connect", "saucelabs-mocha"]);
+  grunt.registerTask('test', ["connect", "saucelabs-mocha",'coveralls']);
   grunt.registerTask('release', ['default','bump']);
 };
