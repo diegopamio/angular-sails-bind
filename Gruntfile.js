@@ -1,4 +1,5 @@
 /*global module:false*/
+/*global process:false*/
 module.exports = function(grunt) {
     var browsers = [{
         browserName: "firefox",
@@ -158,8 +159,8 @@ module.exports = function(grunt) {
   grunt.loadNpmTasks('grunt-jsdoc');
   grunt.loadNpmTasks('grunt-karma');
   grunt.loadNpmTasks('grunt-karma-coveralls');
-    grunt.loadNpmTasks('grunt-docular');
-    grunt.loadNpmTasks('grunt-saucelabs');
+  grunt.loadNpmTasks('grunt-docular');
+  grunt.loadNpmTasks('grunt-saucelabs');
   grunt.loadNpmTasks('grunt-contrib-connect');
 
   // Default task.
