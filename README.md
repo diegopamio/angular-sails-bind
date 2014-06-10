@@ -10,7 +10,7 @@ An AngularJS service to bind Angular models with sailsjs backend models using so
 Add it as a dependency to your angular app, and then bind any model IN JUST ONE LINE!!!!!
 
 ```javascript
-  $sailsBind("<your model name here>", $scope);
+  $sailsBind.bind("<your model name here>", $scope);
 ```
 
 What it does:
@@ -44,12 +44,12 @@ app.controller("ItemsCtrl", function ($scope, $sailsBind) {
   *     4. Watch the "items" model for collection changes in angular (add and removal of items
   *        and send them to the backend using socket.
   **/
-  $sailsBind("item", $scope);
+  $sailsBind.bind("item", $scope);
 ```
 
 ```html
 <div ng-controller="ItemsCtrl">
-  <input ng-model="newItem.name"/><a href="" ng-click="items.push(newItem);newItem={}"></a>Add New
+  <input ng-model="newItem.name"/><a href="" ng-click="items.push(newItem);newItem={}">Add New</a>
   <ul>
     <li ng-repeat="item in items">{{item.name}} <a href="" ng-click="items.splice(items.indexOf(item), 1)">remove</a></li>
   </ul>
@@ -61,7 +61,7 @@ Getting a subset of the model:
 You can filter the initial model content by adding a third parameter to the $sailsBind function (thanks @Shalotelli for the request). 
 
 ```javascript
-   $sailsBind("item", $scope, {"name": {"contains": "Foo"}};
+   $sailsBind.bind("item", $scope, {"name": {"contains": "Foo"}};
 ```
 
 This third parameter is a json that follows the "where" clause syntax, as documented in sails' find call: 
