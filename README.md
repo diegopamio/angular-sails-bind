@@ -2,8 +2,8 @@ Angular Sails Bind
 ==================
 [![Code Climate Rating](https://codeclimate.com/github/diegopamio/angular-sails-bind.png)](https://codeclimate.com/github/diegopamio/angular-sails-bind)
 [![Coverage Status](https://coveralls.io/repos/diegopamio/angular-sails-bind/badge.png?branch=master)](https://coveralls.io/r/diegopamio/angular-sails-bind?branch=master)
+[![devDependency Status](https://david-dm.org/diegopamio/angular-sails-bind/dev-status.svg)](https://david-dm.org/diegopamio/angular-sails-bind#info=devDependencies)
 [![Codeship Status for diegopamio/angular-sails-bind](https://www.codeship.io/projects/942c0fa0-d0ec-0131-db62-1211774025ad/status?branch=master)](https://www.codeship.io/projects/23182)
-
 
 An AngularJS service to bind Angular models with sailsjs backend models using socket.io.
 

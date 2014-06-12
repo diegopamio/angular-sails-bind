@@ -63,9 +63,9 @@ module.exports = function(config) {
       
     ],
 
-        sauceLabs: {
-            testName: 'Web App Unit Tests'
-        },
+    sauceLabs: {
+        testName: 'Web App Unit Tests'
+    },
     // test results reporter to use
     // possible values: 'dots', 'progress', 'junit', 'growl', 'coverage'
     reporters: ['coverage', 'mocha', 'html', 'saucelabs'],
@@ -102,7 +102,8 @@ module.exports = function(config) {
     // - Safari (only Mac; has to be installed with `npm install karma-safari-launcher`)
     // - PhantomJS
     // - IE (only Windows; has to be installed with `npm install karma-ie-launcher`)
-    browsers: ['Chrome'],
+    customLaunchers: customLaunchers,
+    browsers: Object.keys(customLaunchers),
 
 
     // If browser does not capture in given timeout [ms], kill it
