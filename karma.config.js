@@ -1,4 +1,5 @@
 /*global module:false*/
+/*global process:false*/
 // Karma configuration
 // Generated on Thu May 29 2014 22:32:20 GMT-0300 (ART)
 
@@ -60,7 +61,7 @@ module.exports = function (config) {
         ],
 
         sauceLabs: {
-            testName: 'Web App Unit Tests'
+            testName: process.env.CI_MESSAGE || 'Web App Unit Tests'
         },
         // test results reporter to use
         // possible values: 'dots', 'progress', 'junit', 'growl', 'coverage'
