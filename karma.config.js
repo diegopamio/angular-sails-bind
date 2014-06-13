@@ -84,7 +84,8 @@ module.exports = function (config) {
         ],
 
         sauceLabs: {
-            testName: process.env.CI_MESSAGE || 'Web App Unit Tests'
+            testName: process.env.CI_MESSAGE || 'Web App Unit Tests',
+            build: process.env.CI_BUILD_NUMBER
         },
         // test results reporter to use
         // possible values: 'dots', 'progress', 'junit', 'growl', 'coverage'
