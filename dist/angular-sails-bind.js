@@ -105,11 +105,11 @@ app.factory('$sailsBind', [
                 removedElements = oldValues.diff(newValues);
 
                 removedElements.forEach(function (item) {
-                    $socket.get("/" + resourceName + "?id=" + item.id ).then(function (itemIsOnBackend) {
+                    $socket.get("/" + resourceName + "?id=" + item.id ).then(function (itemIsOnBackend, error) {
                         if (itemIsOnBackend && !itemIsOnBackend.error) {
                             $socket.remove('/' + resourceName + '/destroy/' + item.id);
                         }
-                    }, function() { //error
+                    }, function(error) {
                         $socket.remove('/' + resourceName + '/destroy/' + item.id);
 
                     });
@@ -226,6 +226,41 @@ app.factory('$socket', [
              **/
             remove = function (url, cb) {
                 io.socket.delete(url, cb);
+            },
+
+            /**
+             * Handles socket message, allowing for live updating.
+             *
+             * @param model {string} Model to listen to
+             * @param res {object} Response from $socket.on() callback
+             * @param $scope {object} Scope to update data on
+             **/
+            handleMessage = function (model, res, $scope) {
+                if (res.model === model) {
+                    var i, j, keys;
+                    if (res.verb === 'create') {
+                        $scope.push(res.data);
+                    }
+
+                    if (res.verb === 'update') {
+                        keys = Object.keys(res.data);
+                        for (i = 0; i < $scope.length; i = i + 1) {
+                            if ($scope[i].id === res.id) {
+                                for (j = 0; j < keys.length; j = j + 1) {
+                                    $scope[i][keys[j]] = res.data[keys[j]];
+                                }
+                            }
+                        }
+                    }
+
+                    if (res.verb === 'destroy') {
+                        for (i = 0; i < $scope.length; i = i + 1) {
+                            if ($scope[i].id === res.id) {
+                                $scope.splice(i, 1);
+                            }
+                        }
+                    }
+                }
             };
 
         return {
