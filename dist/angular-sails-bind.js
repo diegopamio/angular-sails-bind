@@ -1,4 +1,4 @@
-/*! angular-sails-bind - v0.2.0 - 2014-06-07
+/*! angular-sails-bind - v0.2.0 - 2014-06-13
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*! angular-sails-bind - v0.0.11 - 2014-05-27
@@ -105,11 +105,11 @@ app.factory('$sailsBind', [
                 removedElements = oldValues.diff(newValues);
 
                 removedElements.forEach(function (item) {
-                    $socket.get("/" + resourceName + "?id=" + item.id ).then(function (itemIsOnBackend, error) {
+                    $socket.get("/" + resourceName + "?id=" + item.id ).then(function (itemIsOnBackend) {
                         if (itemIsOnBackend && !itemIsOnBackend.error) {
                             $socket.remove('/' + resourceName + '/destroy/' + item.id);
                         }
-                    }, function(error) {
+                    }, function() { //error
                         $socket.remove('/' + resourceName + '/destroy/' + item.id);
 
                     });
@@ -123,6 +123,7 @@ app.factory('$sailsBind', [
                             });
                         });
                     }
+
                     addCollectionWatchersToSubitemsOf(addedElements);
                 });
             });

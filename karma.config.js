@@ -5,24 +5,47 @@
 
 module.exports = function (config) {
     'use strict';
-    var customLaunchers = {
-        sl_chrome: {
-            base: 'SauceLabs',
-            browserName: 'chrome',
-            platform: 'Windows 7'
+    var environment = process.env_NODE_ENV || 'dev',
+        customLaunchersByEnvironment = {
+            test: {
+                sl_chrome: {
+                    base: 'SauceLabs',
+                    browserName: 'chrome',
+                    platform: 'Windows 7'
+                },
+                sl_firefox: {
+                    base: 'SauceLabs',
+                    browserName: 'firefox',
+                    version: '27'
+                },
+                sl_ie_11: {
+                    base: 'SauceLabs',
+                    browserName: 'internet explorer',
+                    platform: 'Windows 8.1',
+                    version: '11'
+                }
+            },
+            dev: {
+                chrome_without_security: {
+                    base: 'Chrome',
+                    flags: ['--disable-web-security']
+                }
+            }
         },
-        sl_firefox: {
-            base: 'SauceLabs',
-            browserName: 'firefox',
-            version: '27'
+        customLaunchers = customLaunchersByEnvironment[environment],
+        reportersByEnvironment = {
+            test: ['coverage', 'mocha', 'html', 'saucelabs'],
+            dev: ['mocha']
         },
-        sl_ie_11: {
-            base: 'SauceLabs',
-            browserName: 'internet explorer',
-            platform: 'Windows 8.1',
-            version: '11'
-        }
-    };
+        reporters = reportersByEnvironment[environment],
+        browsersByEnvironment = {
+            test: Object.keys(customLaunchers),
+            dev: ['chrome_without_security']
+        },
+        browsers = browsersByEnvironment[environment];
+
+
+
     config.set({
 
         // base path, that will be used to resolve files and exclude
@@ -65,7 +88,8 @@ module.exports = function (config) {
         },
         // test results reporter to use
         // possible values: 'dots', 'progress', 'junit', 'growl', 'coverage'
-        reporters: ['coverage', 'mocha', 'html', 'saucelabs'],
+        reporters: reporters,
+
         htmlReporter: {
             outputFile: 'test/report/resuts.html'
         },
@@ -100,7 +124,7 @@ module.exports = function (config) {
         // - PhantomJS
         // - IE (only Windows; has to be installed with `npm install karma-ie-launcher`)
         customLaunchers: customLaunchers,
-        browsers: Object.keys(customLaunchers),
+        browsers: browsers,
 
 
         // If browser does not capture in given timeout [ms], kill it
