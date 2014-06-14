@@ -6,15 +6,16 @@ var io = {
         data: {},
         when: {
             put: {},
-            get: {}
+            get: {},
+            delete: {}
         },
         callbacks: [],
         callback: {},
         request: function (url, additional, cb) {
             var self = this;
-            setTimeout(function() {
+            $timeout(function() {
                 cb(self.when.get[url].return);
-            },10);
+            });
 
         },
         on: function (modelName, callback) {
@@ -43,7 +44,7 @@ var io = {
 //            }
 
                 self = this;
-            setTimeout(function() {
+            $timeout(function() {
                 self.callback.callback({verb: verb, data: data, id: id});
                 $rootScope.$apply(defer.resolve());
             }, 10);
@@ -51,9 +52,27 @@ var io = {
         },
         put: function (url, data, callback) {
             var self = this;
-            setTimeout(function () {
+            $timeout(function () {
                 callback(self.when.put[url].return);
-            }, 10)
+            });
+            self.putCalled = {url: url, data: data};
+        },
+        post: function (url, data, callback) {
+            var self = this;
+            $timeout(function () {
+                callback(self.when.post[url].return);
+            });
+            self.postCalled = true;
+        },
+        delete: function (url, callback) {
+            var self = this;
+            if (callback) {
+                $timeout(function () {
+                    callback(self.when.delete[url].return);
+                });
+            }
+            self.deleteCalled = {url: url};
         }
+
     }
 };
