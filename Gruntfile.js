@@ -75,14 +75,6 @@ module.exports = function (grunt) {
                 files: '<%= jshint.gruntfile.src %>',
                 tasks: ['jshint:gruntfile', 'karma']
             }
-        },
-        connect: {
-            server: {
-                options: {
-                    base: "",
-                    port: 9999
-                }
-            }
         }
     });
 
@@ -94,9 +86,8 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-bump');
     grunt.loadNpmTasks('grunt-karma');
     grunt.loadNpmTasks('grunt-karma-coveralls');
-    grunt.loadNpmTasks('grunt-contrib-connect');
 
     // Default task.
-    grunt.registerTask('default', ['connect', 'concat', 'uglify', 'karma', 'coveralls']);
+    grunt.registerTask('default', ['concat', 'uglify', 'karma', 'coveralls']);
     grunt.registerTask('release', ['default', 'bump']);
 };
