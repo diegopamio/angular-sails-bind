@@ -6,8 +6,6 @@ Angular Sails Bind
 [![Sauce Test Status](https://saucelabs.com/buildstatus/dpamio)](https://saucelabs.com/u/dpamio)
 [![Codeship Status for diegopamio/angular-sails-bind](https://www.codeship.io/projects/942c0fa0-d0ec-0131-db62-1211774025ad/status?branch=master)](https://www.codeship.io/projects/23182)
 
-[![Sauce Test Status](https://saucelabs.com/browser-matrix/dpamio.svg)](https://saucelabs.com/u/dpamio)
-
 An AngularJS service to bind Angular models with sailsjs backend models using socket.io.
 
 Add it as a dependency to your angular app, and then bind any model IN JUST ONE LINE!!!!!
