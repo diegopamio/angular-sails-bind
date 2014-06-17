@@ -28,7 +28,7 @@ module.exports = function (config) {
             dev: {
                 chrome_without_security: {
                     base: 'Chrome',
-                    flags: ['--disable-web-security']
+                    flags: []
                 }
             }
         },

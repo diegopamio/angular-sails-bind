@@ -9,40 +9,23 @@ var io = {
             get: {},
             delete: {}
         },
-        callbacks: [],
         callback: {},
         request: function (url, additional, cb) {
             var self = this;
-            $timeout(function() {
-                cb(self.when.get[url].return);
+
+            $timeout(function () {
+                if (cb) {
+                    cb(self.when.get[url].return);
+                }
             });
+            self.requestCalled = {url: url, additional: additional};
 
         },
         on: function (modelName, callback) {
-
-//            this.callbacks.push({what: modelName, callback: callback});
             this.callback = {what: modelName, callback: callback};
         },
         triggerOn: function (modelName, verb, data, id) {
             var defer = new $q.defer(),
-//                callbacks = this.callbacks.filter(function (item) {
-//                return item.what = modelName;
-//            });
-//            if (callbacks.length > 0) {
-//                callbacks.forEach(function (item) {
-//                    setTimeout(function () {
-//                        item.callback({verb: verb, data: data});
-//                        defer.resolve();
-//                    }, 10);
-//                });
-//
-//            }
-//            else {
-//                setTimeout(function (item) {
-//                    defer.resolve()
-//                },10);
-//            }
-
                 self = this;
             $timeout(function() {
                 self.callback.callback({verb: verb, data: data, id: id});
@@ -59,10 +42,13 @@ var io = {
         },
         post: function (url, data, callback) {
             var self = this;
-            $timeout(function () {
-                callback(self.when.post[url].return);
-            });
-            self.postCalled = true;
+
+            if (callback) {
+                $timeout(function () {
+                    callback(self.when.post[url].return);
+                });
+            }
+            self.postCalled = {url: url, data: data};
         },
         delete: function (url, callback) {
             var self = this;
