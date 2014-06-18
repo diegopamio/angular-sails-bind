@@ -15,6 +15,8 @@ Add it as a dependency to your angular app, and then bind any model IN JUST ONE 
   $sailsBind.bind("<your model name here>", $scope);
 ```
 
+how much it weights? It takes only 2073 bytes of pure javascript to add this magic to your angularjs project.
+
 What it does:
 
 * Creates the model inside the $scope for you.

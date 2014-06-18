@@ -67,7 +67,7 @@ module.exports = function (config) {
             'karma-sauce-launcher'
         ],
         preprocessors: {
-            'lib/*.js': 'coverage'
+            'lib/angular-sails-bind.js': 'coverage'
         },
         // list of files / patterns to load in the browser
         files: [
