@@ -34,6 +34,7 @@ module.exports = function (grunt) {
             options: {
                 commitFiles: ['-a'],
                 files: ['package.json', 'bower.json'],
+                push: false,
                 pushTo: 'origin'
             }
         },
@@ -86,8 +87,9 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-bump');
     grunt.loadNpmTasks('grunt-karma');
     grunt.loadNpmTasks('grunt-karma-coveralls');
+    grunt.loadNpmTasks('grunt-conventional-changelog');
 
     // Default task.
     grunt.registerTask('default', ['concat', 'uglify', 'karma', 'coveralls']);
-    grunt.registerTask('release', ['default', 'bump']);
+    grunt.registerTask('release', ['bump-only', 'default','changelog', 'bump-commit']);
 };

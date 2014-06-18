@@ -1,12 +1,6 @@
-/*! angular-sails-bind - v0.2.0 - 2014-06-17
+/*! angular-sails-bind - v0.2.0 - 2014-06-18
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2014 Diego Pamio; Licensed MIT */
-/*! angular-sails-bind - v0.0.11 - 2014-05-27
- * https://github.com/diegopamio/angular-sails-bind
- * Copyright (c) 2014 Diego Pamio; Licensed MIT */
-/*! angular-sails-bind - v0.0.7 - 2014-05-20
- * https://github.com/diegopamio/angular-sails-bind
- * Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*global angular:false */
 /*global io:false */
 /**
@@ -77,9 +71,6 @@ app.factory('$sailsBind', [
 
             //3. Watch the model for changes and send them to the backend using socket.
             $scope.$watchCollection(resourceName + "s", function (newValues, oldValues) {
-                if (!oldValues && newValues) { //if is the first initial load
-                    addCollectionWatchersToSubitemsOf(newValues);
-                }
                 var addedElements, removedElements;
                 newValues = newValues || [];
                 oldValues = oldValues || [];
@@ -91,9 +82,6 @@ app.factory('$sailsBind', [
                         if (itemIsOnBackend && !itemIsOnBackend.error) {
                             io.socket.delete('/' + resourceName + '/destroy/' + item.id);
                         }
-                    }, function(error) {
-                        io.socket.delete('/' + resourceName + '/destroy/' + item.id);
-
                     });
                 });
 
