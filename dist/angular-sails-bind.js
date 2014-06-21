@@ -1,6 +1,12 @@
-/*! angular-sails-bind - v1.0.2 - 2014-06-18
+/*! angular-sails-bind - v1.0.2 - 2014-06-20
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2014 Diego Pamio; Licensed MIT */
+/*! angular-sails-bind - v0.0.11 - 2014-05-27
+ * https://github.com/diegopamio/angular-sails-bind
+ * Copyright (c) 2014 Diego Pamio; Licensed MIT */
+/*! angular-sails-bind - v0.0.7 - 2014-05-20
+ * https://github.com/diegopamio/angular-sails-bind
+ * Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*global angular:false */
 /*global io:false */
 /**
@@ -14,8 +20,8 @@
 var app = angular.module("ngSailsBind", []);
 
 app.factory('$sailsBind', [
-    '$q',
-    function ($q) {
+    '$q', "$rootScope",
+    function ($q, $rootScope) {
         'use strict';
         /**
          * This function basically does three things:
