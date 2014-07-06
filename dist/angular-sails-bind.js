@@ -51,10 +51,10 @@ app.factory('$sailsBind', [
                 var elements = $scope[resourceName + "s"],
                     actions = {
                         created: function () {
-                            $scope[resourceName + "s"].push(message.data);
+                            elements.push(message.data);
                         },
                         updated: function () {
-                            var updatedElement = $scope[resourceName + "s"].find(
+                            var updatedElement = elements.find(
                                 function (element) {
                                     return parseInt(message.id, 10) === parseInt(element.id, 10);
                                 }
@@ -62,7 +62,7 @@ app.factory('$sailsBind', [
                             angular.extend(updatedElement, message.data);
                         },
                         destroyed: function () {
-                            var deletedElement = $scope[resourceName + "s"].find(
+                            var deletedElement = elements.find(
                                 function (element) {
                                     return parseInt(element.id, 10) === parseInt(message.id, 10);
                                 }
@@ -73,6 +73,7 @@ app.factory('$sailsBind', [
                         }
                     };
                 actions[message.verb]();
+                $scope.$apply();
             });
 
             //3. Watch the model for changes and send them to the backend using socket.
@@ -80,8 +81,8 @@ app.factory('$sailsBind', [
                 var addedElements, removedElements;
                 newValues = newValues || [];
                 oldValues = oldValues || [];
-                addedElements =  newValues.diff(oldValues);
-                removedElements = oldValues.diff(newValues);
+                addedElements =  diff(newValues, oldValues);
+                removedElements = diff(oldValues, newValues);
 
                 removedElements.forEach(function (item) {
                     _get("/" + resourceName + "?id=" + item.id ).then(function (itemIsOnBackend) {
@@ -109,7 +110,7 @@ app.factory('$sailsBind', [
         /**
          * Adds watchers to each item in the model to perform the "post" when something there changes.
          * @param model is the model to watch
-         * @param scope is the scoope where the model belongs to
+         * @param scope is the scope where the model belongs to
          * @param resourceName is the "singular" version of the model as used by sailsjs
          */
         var addCollectionWatchersToSubitemsOf = function (model, scope, resourceName) {
@@ -185,10 +186,8 @@ if (!Array.prototype.find) {
     });
 }
 
-if (!Array.prototype.diff) {
-    Array.prototype.diff = function (a) {
-        return this.filter(function (i) {
-            return a.indexOf(i) < 0;
-        });
-    };
+function diff(arr1, arr2) {
+    return arr1.filter(function (i) {
+        return arr2.indexOf(i) < 0;
+    });
 }
