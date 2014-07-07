@@ -1,4 +1,4 @@
-/*! angular-sails-bind - v1.0.3 - 2014-07-11
+/*! angular-sails-bind - v1.0.3 - 2014-07-17
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*! angular-sails-bind - v1.0.3 - 2014-05-20
@@ -38,12 +38,13 @@ app.factory('$sailsBind', [
             var requestEnded = _get("/" + resourceName, subset);
 
             requestEnded.then(function (data) {
-		if ( ! Array.isArray(data) ) {
-			data=[data];
-		}
-		$scope[resourceName + "s"] = data;
-		addCollectionWatchersToSubitemsOf(data, $scope, resourceName);
-		defer_bind.resolve();
+        		if ( ! Array.isArray(data) ) {
+        			data=[data];
+        		}
+                $scope[resourceName + "s"] = data;
+                addCollectionWatchersToSubitemsOf(data, $scope, resourceName);
+                init();
+                defer_bind.resolve();
             });
 
             //2. Hook the socket events to update the model.
@@ -51,26 +52,23 @@ app.factory('$sailsBind', [
                 var elements = $scope[resourceName + "s"],
                     actions = {
                         created: function () {
-<<<<<<< HEAD
                             $scope.$apply(function() {
                                 $scope[resourceName + "s"].push(message.data);
                             });
-=======
-                            elements.push(message.data);
->>>>>>> converted Array.prototype.diff to local function and cleaned up element refs
                         },
                         updated: function () {
                             var updatedElement = elements.find(
                                 function (element) {
-                                    return parseInt(message.id, 10) === parseInt(element.id, 10);
+                                    return message.id == element.id;
                                 }
                             );
+
                             angular.extend(updatedElement, message.data);
                         },
                         destroyed: function () {
                             var deletedElement = elements.find(
                                 function (element) {
-                                    return parseInt(element.id, 10) === parseInt(message.id, 10);
+                                    return message.id == element.id;
                                 }
                             );
                             if (deletedElement) {
@@ -85,33 +83,38 @@ app.factory('$sailsBind', [
             });
 
             //3. Watch the model for changes and send them to the backend using socket.
-            $scope.$watchCollection(resourceName + "s", function (newValues, oldValues) {
-                var addedElements, removedElements;
-                newValues = newValues || [];
-                oldValues = oldValues || [];
-                addedElements =  diff(newValues, oldValues);
-                removedElements = diff(oldValues, newValues);
+            function init() {
+                $scope.$watchCollection(resourceName + "s", function (newValues, oldValues) {
+                    var addedElements, removedElements;
+                    newValues = newValues || [];
+                    oldValues = oldValues || [];
+                    addedElements =  diff(newValues, oldValues);
+                    removedElements = diff(oldValues, newValues);
 
-                removedElements.forEach(function (item) {
-                    _get("/" + resourceName + "?id=" + item.id ).then(function (itemIsOnBackend) {
-                        if (itemIsOnBackend && !itemIsOnBackend.error) {
-                            io.socket.delete('/' + resourceName + '/destroy/' + item.id);
-                        }
-                    });
-                });
-
-                addedElements.forEach(function (item) {
-                    if (!item.id) { //if is a brand new item w/o id from the database
-                        io.socket.put('/' + resourceName + '/create/', item, function (data) {
-                            _get("/" + resourceName + "/" + data.id ).then(function (newData) {
-                                angular.extend(item, newData);
-                            });
+                    removedElements.forEach(function (item) {
+                        _get("/" + resourceName + "?id=" + item.id ).then(function (itemIsOnBackend) {
+                            if (itemIsOnBackend && !itemIsOnBackend.error) {
+                                io.socket.delete('/' + resourceName + '/destroy/' + item.id);
+                            }
                         });
-                    }
+                    });
 
+                    addedElements.forEach(function (item) {
+                        if (!item.id) { //if is a brand new item w/o id from the database
+                            io.socket.put('/' + resourceName + '/create/', item, function (data) {
+                                _get("/" + resourceName + "/" + data.id ).then(function (newData) {
+                                    angular.extend(item, newData);
+                                });
+                            });
+                        }
+
+                    });
+
+                    // Add Watchers to each added element
                     addCollectionWatchersToSubitemsOf(addedElements, $scope, resourceName);
                 });
-            });
+            };
+
             return defer_bind.promise;
         };
 
@@ -122,13 +125,14 @@ app.factory('$sailsBind', [
          * @param resourceName is the "singular" version of the model as used by sailsjs
          */
         var addCollectionWatchersToSubitemsOf = function (model, scope, resourceName) {
-            angular.forEach(model, function (item) {
+            model.forEach(function (item) {
                 scope.$watchCollection(
                         resourceName + 's' + '[' + scope[resourceName + "s"].indexOf(item) + ']',
                     function (newValue, oldValue) {
+
                         if (oldValue && newValue) {
                             if (!angular.equals(oldValue, newValue) && // is in the database and is not new
-                                parseInt(oldValue.id, 10) === parseInt(newValue.id, 10) && //not a shift
+                                oldValue.id == newValue.id && //not a shift
                                 oldValue.updatedAt === newValue.updatedAt) { //is not an update FROM backend
                                 io.socket.post('/' + resourceName + '/update/' + oldValue.id,
                                     angular.copy(newValue));
@@ -153,9 +157,8 @@ app.factory('$sailsBind', [
             additional  = additional || {};
 
             io.socket.request(url, additional, function (res) {
-        $rootScope.$evalAsync(function () {
-          defer.resolve(res)
-        });            });
+                $rootScope.$apply(defer.resolve(res));
+            });
             return defer.promise;
         };
 
@@ -195,14 +198,6 @@ if (!Array.prototype.find) {
     });
 }
 
-<<<<<<< HEAD
-if (!Array.prototype.diff) {
-    Array.prototype.diff = function (a) {
-        return this.filter(function (i) {
-            return a.indexOf(i) < 0;
-        });
-    };
-}
 
 if(!Array.isArray) {
   Array.isArray = function(arg) {
@@ -210,10 +205,8 @@ if(!Array.isArray) {
   };
 }
 
-=======
 function diff(arr1, arr2) {
     return arr1.filter(function (i) {
         return arr2.indexOf(i) < 0;
     });
 }
->>>>>>> converted Array.prototype.diff to local function and cleaned up element refs
