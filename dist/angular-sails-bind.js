@@ -1,10 +1,7 @@
-/*! angular-sails-bind - v1.0.2 - 2014-06-20
+/*! angular-sails-bind - v1.0.3 - 2014-07-09
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2014 Diego Pamio; Licensed MIT */
-/*! angular-sails-bind - v0.0.11 - 2014-05-27
- * https://github.com/diegopamio/angular-sails-bind
- * Copyright (c) 2014 Diego Pamio; Licensed MIT */
-/*! angular-sails-bind - v0.0.7 - 2014-05-20
+/*! angular-sails-bind - v1.0.3 - 2014-05-20
  * https://github.com/diegopamio/angular-sails-bind
  * Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*global angular:false */
@@ -41,9 +38,12 @@ app.factory('$sailsBind', [
             var requestEnded = _get("/" + resourceName, subset);
 
             requestEnded.then(function (data) {
-                $scope[resourceName + "s"] = data;
-                addCollectionWatchersToSubitemsOf(data, $scope, resourceName);
-                defer_bind.resolve();
+		if ( ! Array.isArray(data) ) {
+			data=[data];
+		}
+		$scope[resourceName + "s"] = data;
+		addCollectionWatchersToSubitemsOf(data, $scope, resourceName);
+		defer_bind.resolve();
             });
 
             //2. Hook the socket events to update the model.
@@ -192,3 +192,10 @@ if (!Array.prototype.diff) {
         });
     };
 }
+
+if(!Array.isArray) {
+  Array.isArray = function(arg) {
+    return Object.prototype.toString.call(arg) === '[object Array]';
+  };
+}
+
