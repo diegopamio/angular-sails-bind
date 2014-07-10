@@ -113,7 +113,7 @@ app.factory('$sailsBind', [
          * @param resourceName is the "singular" version of the model as used by sailsjs
          */
         var addCollectionWatchersToSubitemsOf = function (model, scope, resourceName) {
-            model.forEach(function (item) {
+            angular.forEach(model, function (item) {
                 scope.$watchCollection(
                         resourceName + 's' + '[' + scope[resourceName + "s"].indexOf(item) + ']',
                     function (newValue, oldValue) {
@@ -144,8 +144,9 @@ app.factory('$sailsBind', [
             additional  = additional || {};
 
             io.socket.request(url, additional, function (res) {
-                $rootScope.$apply(defer.resolve(res));
-            });
+        $rootScope.$evalAsync(function () {
+          defer.resolve(res)
+        });            });
             return defer.promise;
         };
 
