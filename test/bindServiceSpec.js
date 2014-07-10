@@ -160,4 +160,26 @@ describe('the angular sailsjs bind service', function () {
 
         });
     });
+
+
+    describe('the bind function, when the server returns an object instead of an array', function () {
+        var modelName = "myModelItem",
+            defaultData;
+
+        beforeEach(function () {
+            defaultData = 
+                {'id': '1', 'modelAttribute1': "string", 'modelAttribute2': 'another string'};
+
+            //Mock the initial "get all"
+            io.socket.when.get["/" + modelName] = {return: defaultData};
+
+            //Do the binding.
+            $sailsBind.bind(modelName, $rootScope);
+            $timeout.flush();
+        });
+
+	it('should still create an array in the scope', function() {
+            expect($rootScope[modelName + 's']).to.be.an("array");
+	});
+    });
 });
