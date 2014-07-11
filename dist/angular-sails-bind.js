@@ -1,4 +1,4 @@
-/*! angular-sails-bind - v1.0.3 - 2014-07-09
+/*! angular-sails-bind - v1.0.3 - 2014-07-11
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*! angular-sails-bind - v1.0.3 - 2014-05-20
@@ -51,7 +51,9 @@ app.factory('$sailsBind', [
                 var elements = $scope[resourceName + "s"],
                     actions = {
                         created: function () {
-                            $scope[resourceName + "s"].push(message.data);
+                            $scope.$apply(function() {
+                                $scope[resourceName + "s"].push(message.data);
+                            });
                         },
                         updated: function () {
                             var updatedElement = $scope[resourceName + "s"].find(
@@ -68,7 +70,9 @@ app.factory('$sailsBind', [
                                 }
                             );
                             if (deletedElement) {
-                                elements.splice(elements.indexOf(deletedElement), 1);
+                                $scope.$apply(function() {
+                                    elements.splice(elements.indexOf(deletedElement), 1);
+                                });
                             }
                         }
                     };
