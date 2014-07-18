@@ -1,7 +1,4 @@
 /*! angular-sails-bind - v1.0.3 - 2014-07-17
-=======
-/*! angular-sails-bind - v1.0.3 - 2014-07-10
->>>>>>> added gitignore for dependency and node_modules folders
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*! angular-sails-bind - v1.0.3 - 2014-05-20
@@ -200,7 +197,6 @@ if (!Array.prototype.find) {
         }
     });
 }
-
 
 if(!Array.isArray) {
   Array.isArray = function(arg) {
