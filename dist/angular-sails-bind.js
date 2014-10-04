@@ -1,12 +1,6 @@
-/*! angular-sails-bind - v1.0.2 - 2014-06-20
+/*! angular-sails-bind - v1.0.4 - 2014-10-04
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2014 Diego Pamio; Licensed MIT */
-/*! angular-sails-bind - v0.0.11 - 2014-05-27
- * https://github.com/diegopamio/angular-sails-bind
- * Copyright (c) 2014 Diego Pamio; Licensed MIT */
-/*! angular-sails-bind - v0.0.7 - 2014-05-20
- * https://github.com/diegopamio/angular-sails-bind
- * Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*global angular:false */
 /*global io:false */
 /**
@@ -143,7 +137,7 @@ app.factory('$sailsBind', [
             var defer = new $q.defer();
             additional  = additional || {};
 
-            io.socket.request(url, additional, function (res) {
+            io.socket.get(url, additional, function (res) {
                 $rootScope.$apply(defer.resolve(res));
             });
             return defer.promise;
