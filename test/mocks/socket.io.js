@@ -10,7 +10,7 @@ var io = {
             delete: {}
         },
         callback: {},
-        request: function (url, additional, cb) {
+        get: function (url, additional, cb) {
             var self = this;
 
             $timeout(function () {
