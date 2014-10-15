@@ -1,3 +1,6 @@
+/*! angular-sails-bind - v1.0.5 - 2014-10-15
+* https://github.com/diegopamio/angular-sails-bind
+* Copyright (c) 2014 Diego Pamio; Licensed MIT */
 /*! angular-sails-bind - v1.0.5 - 2014-05-20
  * https://github.com/diegopamio/angular-sails-bind
  * Copyright (c) 2014 Diego Pamio; Licensed MIT */
@@ -29,7 +32,7 @@ app.factory('$sailsBind', [
          *        check http://beta.sailsjs.org/#!documentation/reference/Blueprints/FindRecords.html to see
          *        what you can send.
          */
-        var bind = function (resourceName, $scope, subset) {
+        var bind = function (resourceName, $scope, subset, callback) {
 
             var prefix = resourceName.split('/');
             if(prefix.length>1) {
@@ -49,6 +52,9 @@ app.factory('$sailsBind', [
         		}
                 $scope[resourceName + "s"] = data;
                 addCollectionWatchersToSubitemsOf(data, $scope, resourceName, prefix);
+                //in case we need to do something in the controller after data
+                //has loaded, invoke the callback
+                callback();
                 init();
                 defer_bind.resolve();
             });
