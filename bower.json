@@ -13,6 +13,9 @@
     "package.json",
     "README.md"
   ],
+  "main": [
+    "dist/angular-sails-bind.js"
+  ],
   "dependencies": {
     "angular": "*"
   },
