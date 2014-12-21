@@ -109,17 +109,17 @@ app.factory('$sailsBind', [
                     removedElements = diff(oldValues, newValues);
 
                     removedElements.forEach(function (item) {
-                        _get("/" + prefix + resourceName + "?id=" + item.id ).then(function (itemIsOnBackend) {
+                        _get("/" + prefix + resourceName + "/" + item.id ).then(function (itemIsOnBackend) {
                             if (itemIsOnBackend && !itemIsOnBackend.error) {
                                 $rootScope.$broadcast(resourceName, { id: item.id, verb: 'destroyed', scope: $scope.$id });
-                                io.socket.delete("/" + prefix + resourceName + '/destroy/' + item.id);
+                                io.socket.delete("/" + prefix + resourceName + '/' + item.id);
                             }
                         });
                     });
 
                     addedElements.forEach(function (item) {
                         if (!item.id) { //if is a brand new item w/o id from the database
-                            io.socket.put("/" + prefix + resourceName + '/create/', item, function (data) {
+                            io.socket.post("/" + prefix + resourceName, item, function (data) {
                                 _get("/" + prefix + resourceName + "/" + data.id ).then(function (newData) {
                                     angular.extend(item, newData);
                                     $rootScope.$broadcast(resourceName, { id: item.id, verb: 'created', scope: $scope.$id, data: angular.copy(item) });
@@ -154,7 +154,7 @@ app.factory('$sailsBind', [
                                 oldValue.id == newValue.id && //not a shift
                                 oldValue.updatedAt === newValue.updatedAt) { //is not an update FROM backend
                                 $rootScope.$broadcast(resourceName, { id: oldValue.id, verb: 'updated', scope: scope.$id, data: angular.extend(angular.copy(newValue),{ updatedAt: (new Date()).toISOString() }) });
-                                io.socket.post("/" + prefix  + resourceName + '/update/' + oldValue.id,
+                                io.socket.put("/" + prefix  + resourceName + '/' + oldValue.id,
                                     angular.copy(newValue));
                             }
                         }
