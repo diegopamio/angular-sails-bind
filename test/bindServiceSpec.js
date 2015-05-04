@@ -28,8 +28,9 @@ describe('the angular sailsjs bind service', function () {
     });
 
     describe('the bind function', function () {
-        var modelName = "myModelItem",
-            defaultData;
+        var modelName = "myModelItem";
+        var scopeProperty = modelName + "s";
+        var defaultData;
 
         beforeEach(function () {
             defaultData = [
@@ -46,19 +47,19 @@ describe('the angular sailsjs bind service', function () {
         });
 
         it('should create a model named ' + modelName, function () {
-            expect($rootScope[modelName + 's']).to.be.an("array");
+            expect($rootScope[scopeProperty]).to.be.an("array");
         });
         it('should load the model with the contents from the backend', function () {
             expect(io.socket.requestCalled.url).to.equal("/" + modelName);
 
-            expect($rootScope[modelName + 's']).to.deep.equal(defaultData);
+            expect($rootScope[scopeProperty]).to.deep.equal(defaultData);
         });
 
         it('should update the model when a new element is ADDED in the backend', function () {
             //Simulate an "on-created" event sent from the server for this model
             io.socket.triggerOn(modelName, 'created', {'id': '3', 'modelAttribute1': "new", 'modelAttribute2': 'data'});
             $timeout.flush();
-            expect($rootScope[modelName + 's']).to.have.length(3);
+            expect($rootScope[scopeProperty]).to.have.length(3);
         });
 
         it('should update the model when an  element is DELETED in the backend', function () {
@@ -76,7 +77,7 @@ describe('the angular sailsjs bind service', function () {
             io.socket.triggerOn(modelName, 'destroyed', removedData, removedData.id);
             $timeout.flush();
 
-            expect($rootScope[modelName + 's']).to.have.length(1);
+            expect($rootScope[scopeProperty]).to.have.length(1);
         });
 
         it('should update the model when an is MODIFIED in the backend', function () {
@@ -86,7 +87,7 @@ describe('the angular sailsjs bind service', function () {
             io.socket.triggerOn(modelName, 'updated', modifiedItem, modifiedItem.id);
             $timeout.flush();
 
-            expect($rootScope[modelName + 's'][1]).to.deep.equal(modifiedItem);
+            expect($rootScope[scopeProperty][1]).to.deep.equal(modifiedItem);
         });
 
         it('should persist in the backend when a new element is ADDED in the client', function () {
@@ -103,7 +104,7 @@ describe('the angular sailsjs bind service', function () {
             };
 
             //Modify the model
-            $rootScope[modelName + 's'].push(newElementCreatedInClient);
+            $rootScope[scopeProperty].push(newElementCreatedInClient);
             //$timeout.flush();
             $rootScope.$apply();
             $timeout.flush();
@@ -111,11 +112,11 @@ describe('the angular sailsjs bind service', function () {
             //Check that things were sent to the server as expected
             expect(io.socket.putCalled.data).to.deep.equal(newElementCreatedInClient);
             expect(io.socket.putCalled.url).to.equal("/" + modelName + "/create/");
-            expect($rootScope[modelName + 's'][2]).to.deep.equal(newElementAsReturnedByBackend);
+            expect($rootScope[scopeProperty][2]).to.deep.equal(newElementAsReturnedByBackend);
         });
 
         it('should persist in the backend when an element is REMOVED in the client', function () {
-            var removedData = $rootScope[modelName + 's'].pop();
+            var removedData = $rootScope[scopeProperty].pop();
 
             //Setup backend to simulate the item wasn't removed there yet.
             io.socket.when.get["/" + modelName + "?id=" + removedData.id] = {return: removedData};
@@ -132,7 +133,7 @@ describe('the angular sailsjs bind service', function () {
         });
 
         it('should persist in the backend when a new element is MODIFIED in the client', function () {
-            var dataToModify = $rootScope[modelName + 's'][1];
+            var dataToModify = $rootScope[scopeProperty][1];
 
             //Setup backend to simulate the item wasn't removed there yet.
             //io.socket.when.get["/" + modelName + "?id=" + removedData.id] = {return: removedData};
@@ -141,7 +142,7 @@ describe('the angular sailsjs bind service', function () {
             //io.socket.when.delete["/" + modelName + "/destroy/" + removedData.id] = {return: removedData};
 
             //Modify the model (actually "apply" and "flush" the deletion).
-            $rootScope[modelName + 's'][1].modelAttribute1 = "another string";
+            $rootScope[scopeProperty][1].modelAttribute1 = "another string";
             $rootScope.$apply();
 
             //Check that things were sent to the server as expected
@@ -161,9 +162,43 @@ describe('the angular sailsjs bind service', function () {
         });
     });
 
+    describe('the bind function with binding to user defined property', function(){
+        var modelName = "myModelItem";
+        var scopeProperty = "myProperty";
+        var defaultData;
+
+        beforeEach(function () {
+            defaultData = [
+                {'id': '1', 'modelAttribute1': "string", 'modelAttribute2': 'another string'},
+                {'id': '2', 'modelAttribute1': "4", 'modelAttribute2': '10'}
+            ];
+
+            //Mock the initial "get all"
+            io.socket.when.get["/" + modelName] = {return: defaultData};
+
+            //Do the binding.
+            $sailsBind.bind({
+                model: modelName,
+                scopeProperty: scopeProperty
+            }, $rootScope);
+            $timeout.flush();
+        });
+
+        it('should create a model named ' + scopeProperty, function () {
+            expect($rootScope[scopeProperty]).to.be.an("array");
+        });
+
+        it('should load the model with the contents from the backend', function () {
+            expect(io.socket.requestCalled.url).to.equal("/" + modelName);
+
+            expect($rootScope[scopeProperty]).to.deep.equal(defaultData);
+        });
+    });
+
     describe('the bind function with prefix', function () {
-        var modelName = "myModelItem",
-            defaultData;
+        var modelName = "myModelItem";
+        var defaultData;
+        var scopeProperty = modelName + "s";
 
         beforeEach(function () {
             defaultData = [
@@ -180,19 +215,19 @@ describe('the angular sailsjs bind service', function () {
         });
 
         it('should create a model named ' + modelName, function () {
-            expect($rootScope[modelName + 's']).to.be.an("array");
+            expect($rootScope[scopeProperty]).to.be.an("array");
         });
         it('should load the model with the contents from the backend', function () {
             expect(io.socket.requestCalled.url).to.equal("/api/" + modelName);
 
-            expect($rootScope[modelName + 's']).to.deep.equal(defaultData);
+            expect($rootScope[scopeProperty]).to.deep.equal(defaultData);
         });
 
         it('should update the model when a new element is ADDED in the backend', function () {
             //Simulate an "on-created" event sent from the server for this model
             io.socket.triggerOn(modelName, 'created', {'id': '3', 'modelAttribute1': "new", 'modelAttribute2': 'data'});
             $timeout.flush();
-            expect($rootScope[modelName + 's']).to.have.length(3);
+            expect($rootScope[scopeProperty]).to.have.length(3);
         });
 
         it('should update the model when an  element is DELETED in the backend', function () {
@@ -210,7 +245,7 @@ describe('the angular sailsjs bind service', function () {
             io.socket.triggerOn(modelName, 'destroyed', removedData, removedData.id);
             $timeout.flush();
 
-            expect($rootScope[modelName + 's']).to.have.length(1);
+            expect($rootScope[scopeProperty]).to.have.length(1);
         });
 
         it('should update the model when an is MODIFIED in the backend', function () {
@@ -220,7 +255,7 @@ describe('the angular sailsjs bind service', function () {
             io.socket.triggerOn(modelName, 'updated', modifiedItem, modifiedItem.id);
             $timeout.flush();
 
-            expect($rootScope[modelName + 's'][1]).to.deep.equal(modifiedItem);
+            expect($rootScope[scopeProperty][1]).to.deep.equal(modifiedItem);
         });
 
         it('should persist in the backend when a new element is ADDED in the client', function () {
@@ -237,7 +272,7 @@ describe('the angular sailsjs bind service', function () {
             };
 
             //Modify the model
-            $rootScope[modelName + 's'].push(newElementCreatedInClient);
+            $rootScope[scopeProperty].push(newElementCreatedInClient);
             //$timeout.flush();
             $rootScope.$apply();
             $timeout.flush();
@@ -245,11 +280,11 @@ describe('the angular sailsjs bind service', function () {
             //Check that things were sent to the server as expected
             expect(io.socket.putCalled.data).to.deep.equal(newElementCreatedInClient);
             expect(io.socket.putCalled.url).to.equal("/api/" + modelName + "/create/");
-            expect($rootScope[modelName + 's'][2]).to.deep.equal(newElementAsReturnedByBackend);
+            expect($rootScope[scopeProperty][2]).to.deep.equal(newElementAsReturnedByBackend);
         });
 
         it('should persist in the backend when an element is REMOVED in the client', function () {
-            var removedData = $rootScope[modelName + 's'].pop();
+            var removedData = $rootScope[scopeProperty].pop();
 
             //Setup backend to simulate the item wasn't removed there yet.
             io.socket.when.get["/api/" + modelName + "?id=" + removedData.id] = {return: removedData};
@@ -266,7 +301,7 @@ describe('the angular sailsjs bind service', function () {
         });
 
         it('should persist in the backend when a new element is MODIFIED in the client', function () {
-            var dataToModify = $rootScope[modelName + 's'][1];
+            var dataToModify = $rootScope[scopeProperty][1];
 
             //Setup backend to simulate the item wasn't removed there yet.
             //io.socket.when.get["/" + modelName + "?id=" + removedData.id] = {return: removedData};
@@ -275,7 +310,7 @@ describe('the angular sailsjs bind service', function () {
             //io.socket.when.delete["/" + modelName + "/destroy/" + removedData.id] = {return: removedData};
 
             //Modify the model (actually "apply" and "flush" the deletion).
-            $rootScope[modelName + 's'][1].modelAttribute1 = "another string";
+            $rootScope[scopeProperty][1].modelAttribute1 = "another string";
             $rootScope.$apply();
 
             //Check that things were sent to the server as expected
@@ -295,10 +330,10 @@ describe('the angular sailsjs bind service', function () {
         });
     });
 
-
     describe('the bind function with prefix, when the server returns an object instead of an array', function () {
-        var modelName = "myModelItem",
-            defaultData;
+        var modelName = "myModelItem";
+        var defaultData;
+        var scopeProperty = modelName + "s";
 
         beforeEach(function () {
             defaultData =
@@ -313,14 +348,15 @@ describe('the angular sailsjs bind service', function () {
         });
 
         it('should still create an array in the scope', function () {
-            expect($rootScope[modelName + 's']).to.be.an("array");
+            expect($rootScope[scopeProperty]).to.be.an("array");
         });
     });
 
 
     describe('the bind function, when the server returns an object instead of an array', function () {
-        var modelName = "myModelItem",
-            defaultData;
+        var modelName = "myModelItem";
+        var defaultData;
+        var scopeProperty = modelName + "s";
 
         beforeEach(function () {
             defaultData =
@@ -335,7 +371,8 @@ describe('the angular sailsjs bind service', function () {
         });
 
         it('should still create an array in the scope', function () {
-            expect($rootScope[modelName + 's']).to.be.an("array");
+            expect($rootScope[scopeProperty]).to.be.an("array");
         });
     });
+
 });
