@@ -1,6 +1,7 @@
 {
   "name": "angular-sails-bind",
   "version": "1.0.5",
+  "main": "dist/angular-sails-bind.min.js",
   "ignore": [
     "lib",
     "test",
