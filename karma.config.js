@@ -37,7 +37,8 @@ module.exports = function (config) {
             test: ['coverage', 'mocha', 'html', 'saucelabs'],
             dev: ['mocha']
         },
-        reporters = reportersByEnvironment[environment],
+        reporters = ['progress'],
+        //reporters = reportersByEnvironment[environment],
         browsersByEnvironment = {
             test: Object.keys(customLaunchers),
             dev: ['chrome_without_security']
@@ -71,8 +72,8 @@ module.exports = function (config) {
         },
         // list of files / patterns to load in the browser
         files: [
-            'lib/dependencies/angular/*.js',
-            'lib/dependencies/angular-mocks/*.js',
+            'lib/dependencies/angular/angular.js',
+            'lib/dependencies/angular-mocks/angular-mocks.js',
             'test/mocks/*.js',
             'lib/*.js',
             'test/**/*Spec.js'
