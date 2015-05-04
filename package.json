@@ -12,6 +12,7 @@
     "bind"
   ],
   "homepage": "https://github.com/diegopamio/angular-sails-bind",
+  "main": "dist/angular-sails-bind.js",
   "bugs": "https://github.com/diegopamio/angular-sails-bind/issues",
   "licenses": [
     {
