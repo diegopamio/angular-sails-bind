@@ -38,10 +38,10 @@ Usage
 A small example:
 
 ```javascript
-var app = angular.module("MyApp", ['ngSailsBind']);
-app.controller("ItemsCtrl", function ($scope, $sailsBind) {
-  // To easily add new items to the collection.
-  $scope.newItem = {};  
+angular.module("MyApp", ['ngSailsBind']);
+angular.module("MyApp").controller("ItemsCtrl", function ($scope, $sailsBind) {
+  $scope.newItem = {}; // To easily add new items to the collection. 
+  
   /** This will:
   *     1. Add a "items" model to $scope. (pluralized)
   *     2. Get the data from your http://<examplesite.com>/item through sailsjs
@@ -51,7 +51,9 @@ app.controller("ItemsCtrl", function ($scope, $sailsBind) {
   *     4. Watch the "items" model for collection changes in angular (add
   *     and removal of items and send them to the backend using socket.
   **/
+  
   $sailsBind.bind("item", $scope);
+});
 ```
 
 ```html
@@ -74,5 +76,5 @@ You can filter the initial model content by adding a third parameter to the $sai
    $sailsBind.bind("item", $scope, {"name": {"contains": "Foo"}};
 ```
 
-This third parameter is a json that follows the "where" clause syntax, as documented in sails' find call: 
+This third parameter is json following the "where" clause syntax, as documented in sails' find call: 
 [http://beta.sailsjs.org/#!documentation/reference/Blueprints/FindRecords.html]()
