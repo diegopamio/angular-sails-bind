@@ -9,7 +9,7 @@ Angular Sails Bind
 
 [![Sauce Test Status](https://saucelabs.com/browser-matrix/diegopamio.svg?auth=81be93491f9e7bbfed6d61823bf9352c)](https://saucelabs.com/u/diegopamio)
 
-An AngularJS service to bind Angular models with sailsjs backend models using socket.io.
+An AngularJS service to bind [Angular](https://github.com/angular) models with [SailsJs](https://github.com/balderdashy/sails) backend models using [socket.io](https://github.com/Automattic/socket.io).
 
 Add it as a dependency to your angular app, and then bind any model IN JUST ONE LINE!!!!!
 
@@ -26,10 +26,19 @@ What it does:
 * Watches for changes made by the user in the UI and updates the backend immediately.
 * Watches for changes made in the backend and updates the UI immediately.
 
-Installation:
+Installation
+-----
+
+Install via bower:
 
 ```shell
 bower install angular-sails-bind
+```
+
+or NPM:
+
+```shell
+npm install angular-sails-bind
 ```
 
 Usage
@@ -78,3 +87,39 @@ You can filter the initial model content by adding a third parameter to the $sai
 
 This third parameter is json following the "where" clause syntax, as documented in sails' find call: 
 [http://beta.sailsjs.org/#!documentation/reference/Blueprints/FindRecords.html]()
+
+Advanced
+-----
+
+You can supply an object as the first parameter of the bind method.  
+
+```javascript
+   $sailsBind.bind({
+     model: "item",
+     scopeProperty: "users"
+   }, $scope, {"name": {"contains": "Foo"}};
+```
+
+This will bind the Sails `item` model to the angular scope property `users` with the given search query. The default option is for the model item to bind to $scope.items (and user to $scope.users ...etc).  Using the above format, the exact scope parameter can be specified.
+
+You can also, use the following compact format:
+
+```javascript
+   $sailsBind.bind({
+     model: "item",
+     scopeProperty: "users",
+     scope: $scope
+   }, {"name": {"contains": "Foo"}};
+```
+
+**Note:** If you are supplying and object to the bind method (instead of the method name) you must present the Sails model you are binding to via the model parameter.
+
+You can also bind to a sub parametre of the scope; which is useful if you are using **ControllerAs**.
+
+```javascript
+   $sailsBind.bind({
+     model: "item",
+     scopeProperty: "data.users",
+     scope: $scope
+   }, {"name": {"contains": "Foo"}};
+```
