@@ -44,20 +44,24 @@ app.controller("ItemsCtrl", function ($scope, $sailsBind) {
   $scope.newItem = {};  
   /** This will:
   *     1. Add a "items" model to $scope. (pluralized)
-  *     2. Get the data from your http://<examplesite.com>/item thru sailsjs socket get.
-  *     3. Setup socket io so that, when something changes in the sailsjs backend, they will be reflected
-  *        in the angular "items" model.
-  *     4. Watch the "items" model for collection changes in angular (add and removal of items
-  *        and send them to the backend using socket.
+  *     2. Get the data from your http://<examplesite.com>/item through sailsjs
+  *     socket get.
+  *     3. Setup socket io so that, when something changes in the sailsjs
+  *     backend, they will be reflected in the angular "items" model.
+  *     4. Watch the "items" model for collection changes in angular (add
+  *     and removal of items and send them to the backend using socket.
   **/
   $sailsBind.bind("item", $scope);
 ```
 
 ```html
 <div ng-controller="ItemsCtrl">
-  <input ng-model="newItem.name"/><a href="" ng-click="items.push(newItem);newItem={}">Add New</a>
+  <input ng-model="newItem.name"/>
+  <a href="" ng-click="items.push(newItem);newItem={}">Add New</a>
   <ul>
-    <li ng-repeat="item in items">{{item.name}} <a href="" ng-click="items.splice(items.indexOf(item), 1)">remove</a></li>
+    <li ng-repeat="item in items">{{item.name}}
+      <a href="" ng-click="items.splice(items.indexOf(item), 1)">remove</a>
+    </li>
   </ul>
 </div>
 ```
