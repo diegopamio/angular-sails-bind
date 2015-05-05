@@ -64,6 +64,7 @@ describe('the angular sailsjs bind service', function () {
     describe('the bind function', function () {
         var modelName = "myModelItem";
         var scopeProperty = modelName + "s";
+        //scopeProperty = modelName + ".s";
         var defaultData;
 
         beforeEach(function () {
@@ -226,6 +227,39 @@ describe('the angular sailsjs bind service', function () {
             expect(io.socket.requestCalled.url).to.equal("/" + modelName);
 
             expect($rootScope[scopeProperty]).to.deep.equal(defaultData);
+        });
+    });
+
+    describe('the bind function with binding to user defined sub-property', function(){
+        var modelName = "myModelItem";
+        var scopeProperty = "myProperty.mySubProperty";
+        var defaultData;
+
+        beforeEach(function () {
+            defaultData = [
+                {'id': '1', 'modelAttribute1': "string", 'modelAttribute2': 'another string'},
+                {'id': '2', 'modelAttribute1': "4", 'modelAttribute2': '10'}
+            ];
+
+            //Mock the initial "get all"
+            io.socket.when.get["/" + modelName] = {return: defaultData};
+
+            //Do the binding.
+            $sailsBind.bind({
+                model: modelName,
+                scopeProperty: scopeProperty
+            }, $rootScope);
+            $timeout.flush();
+        });
+
+        it('should create a model named ' + scopeProperty, function () {
+            expect($sailsBind.getObjectProperty($rootScope, scopeProperty)).to.be.an("array");
+        });
+
+        it('should load the model with the contents from the backend', function () {
+            expect(io.socket.requestCalled.url).to.equal("/" + modelName);
+
+            expect($sailsBind.getObjectProperty($rootScope, scopeProperty)).to.deep.equal(defaultData);
         });
     });
 
