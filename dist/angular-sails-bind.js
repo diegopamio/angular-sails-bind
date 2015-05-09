@@ -1,3 +1,6 @@
+/*! angular-sails-bind - v1.0.5 - 2015-05-09
+* https://github.com/diegopamio/angular-sails-bind
+* Copyright (c) 2015 Diego Pamio; Licensed MIT */
 /*! angular-sails-bind - v1.0.5 - 2015-05-05
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2015 Diego Pamio; Licensed MIT */
@@ -15,11 +18,18 @@
  */
 
 (function(){
-    angular.module("ngSailsBind", []);
-
+    try{
+        var ngSails = angular.module("ngSails");
+        angular.module("ngSailsBind", ["ngSails"]);
+    }catch(e){
+        angular.module("ngSailsBind", []).factory("$sails", function(){
+            return io.socket;
+        });
+    }
+    
     angular.module("ngSailsBind").factory('$sailsBind', [
-        '$q', "$rootScope", "$timeout", "$log",
-        function ($q, $rootScope, $timeout, $log) {
+        '$q', "$rootScope", "$timeout", "$log", "$sails",
+        function ($q, $rootScope, $timeout, $log, $sails) {
             'use strict';
             /**
              * This function basically does three things:
@@ -118,7 +128,7 @@
                         $log.log("Unknown action »"+message.verb+"«");
                     }
                 }
-                io.socket.on(resourceName, onMessage);
+                $sails.on(resourceName, onMessage);
                 $scope.$on(resourceName, function (event, message) {
                     if ($scope.$id!=message.scope)
                         onMessage(message);
@@ -137,14 +147,14 @@
                             _get("/" + prefix + resourceName + "?id=" + item.id ).then(function (itemIsOnBackend) {
                                 if (itemIsOnBackend && !itemIsOnBackend.error) {
                                     $rootScope.$broadcast(resourceName, { id: item.id, verb: 'destroyed', scope: $scope.$id });
-                                    io.socket.delete("/" + prefix + resourceName + '/destroy/' + item.id);
+                                    $sails.delete("/" + prefix + resourceName + '/destroy/' + item.id);
                                 }
                             });
                         });
 
                         addedElements.forEach(function (item) {
                             if (!item.id) { //if is a brand new item w/o id from the database
-                                io.socket.put("/" + prefix + resourceName + '/create/', item, function (data) {
+                                $sails.put("/" + prefix + resourceName + '/create/', item, function (data) {
                                     _get("/" + prefix + resourceName + "/" + data.id ).then(function (newData) {
                                         angular.extend(item, newData);
                                         $rootScope.$broadcast(resourceName, { id: item.id, verb: 'created', scope: $scope.$id, data: angular.copy(item) });
@@ -180,7 +190,7 @@
                                     oldValue.id == newValue.id && //not a shift
                                     oldValue.updatedAt === newValue.updatedAt) { //is not an update FROM backend
                                     $rootScope.$broadcast(resourceName, { id: oldValue.id, verb: 'updated', scope: scope.$id, data: angular.extend(angular.copy(newValue),{ updatedAt: (new Date()).toISOString() }) });
-                                    io.socket.post("/" + prefix  + resourceName + '/update/' + oldValue.id,
+                                    $sails.post("/" + prefix  + resourceName + '/update/' + oldValue.id,
                                         angular.copy(newValue));
                                 }
                             }
@@ -202,7 +212,7 @@
                 var defer = new $q.defer();
                 additional  = additional || {};
 
-                io.socket.get(url, additional, function (res) {
+                $sails.get(url, additional, function (res) {
                     $rootScope.$apply(defer.resolve(res));
                 });
                 return defer.promise;
