@@ -29,6 +29,10 @@ module.exports = function (config) {
                 chrome_without_security: {
                     base: 'Chrome',
                     flags: []
+                },
+                phantom: {
+                    base: 'PhantomJS',
+                    flags: []
                 }
             }
         },
@@ -41,7 +45,7 @@ module.exports = function (config) {
         //reporters = reportersByEnvironment[environment],
         browsersByEnvironment = {
             test: Object.keys(customLaunchers),
-            dev: ['chrome_without_security']
+            dev: ['phantom']
         },
         browsers = browsersByEnvironment[environment];
 
@@ -65,7 +69,8 @@ module.exports = function (config) {
             'karma-coverage',
             'karma-mocha-reporter',
             'karma-htmlfile-reporter',
-            'karma-sauce-launcher'
+            'karma-sauce-launcher',
+            'karma-phantomjs-launcher'
         ],
         preprocessors: {
             'lib/angular-sails-bind.js': 'coverage'
