@@ -7,15 +7,23 @@ var io = {
         when: {
             put: {},
             get: {},
-            delete: {}
+            delete: {},
+            post: {}
         },
         callback: {},
-        get: function (url, additional, cb) {
+        get: function (url, additional, callback) {
             var self = this;
 
             $timeout(function () {
-                if (cb) {
-                    cb(self.when.get[url].return);
+                if (callback) {
+                    var resData = {};
+                    var jwres = {};
+
+                    if(self.when.get.hasOwnProperty(url)){
+                        resData = self.when.get[url].return || {};
+                        jwres = self.when.get[url].jwres || {}
+                    }
+                    callback(resData, jwres);  
                 }
             });
             self.requestCalled = {url: url, additional: additional};
@@ -35,9 +43,18 @@ var io = {
         },
         put: function (url, data, callback) {
             var self = this;
+            if (callback) {
             $timeout(function () {
-                callback(self.when.put[url].return);
-            });
+                    var resData = {};
+                    var jwres = {};
+
+                    if(self.when.put.hasOwnProperty(url)){
+                        resData = self.when.put[url].return || {};
+                        jwres = self.when.put[url].jwres || {}
+                    }
+                    callback(resData, jwres);  
+                });
+            }
             self.putCalled = {url: url, data: data};
         },
         post: function (url, data, callback) {
@@ -45,7 +62,15 @@ var io = {
 
             if (callback) {
                 $timeout(function () {
-                    callback(self.when.post[url].return);
+                    var resData = {};
+                    var jwres = {};
+
+                    if(self.when.post.hasOwnProperty(url)){
+                        resData = self.when.post[url].return || {};
+                        jwres = self.when.post[url].jwres || {}
+                    }
+
+                    callback(resData, jwres);  
                 });
             }
             self.postCalled = {url: url, data: data};
@@ -54,7 +79,15 @@ var io = {
             var self = this;
             if (callback) {
                 $timeout(function () {
-                    callback(self.when.delete[url].return);
+                    var resData = {};
+                    var jwres = {};
+
+                    if(self.when.delete.hasOwnProperty(url)){
+                        resData = self.when.delete[url].return || {};
+                        jwres = self.when.delete[url].jwres || {}
+                    }
+
+                    callback(resData, jwres);  
                 });
             }
             self.deleteCalled = {url: url};
