@@ -1,4 +1,7 @@
 /*global module:false*/
+
+var Dgeni = require('dgeni');
+
 module.exports = function (grunt) {
     'use strict';
     // Project configuration.
@@ -89,7 +92,12 @@ module.exports = function (grunt) {
     grunt.loadNpmTasks('grunt-karma-coveralls');
     grunt.loadNpmTasks('grunt-conventional-changelog');
 
-    // Default task.
-    grunt.registerTask('default', ['concat', 'uglify', 'karma', 'coveralls']);
-    grunt.registerTask('release', ['bump-only', 'default','changelog', 'bump-commit']);
+
+    grunt.registerTask('dgeni', 'Generate docs via dgeni.', function() {
+        var done = this.async();
+        var dgeni = new Dgeni([require('./dgeni/dgeni')]);
+        dgeni.generate().then(done);
+    });
+    grunt.registerTask('default', ['concat', 'uglify', 'karma', 'dgeni', 'coveralls']);
+    grunt.registerTask('release', ['bump-only', 'default','changelog', 'dgeni', 'bump-commit']);
 };
