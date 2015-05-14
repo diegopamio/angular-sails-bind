@@ -42,7 +42,11 @@ module.exports = function (grunt) {
             }
         },
         jshint: {
+            all: [
+                'lib/<%= pkg.name %>.js'
+            ],
             options: {
+                strict: true,
                 curly: true,
                 eqeqeq: true,
                 immed: true,
@@ -54,7 +58,10 @@ module.exports = function (grunt) {
                 unused: true,
                 boss: true,
                 eqnull: true,
-                globals: {}
+                globals: {
+                    angular: true,
+                    window: true
+                }
             },
             gruntfile: {
                 src: 'Gruntfile.js'
