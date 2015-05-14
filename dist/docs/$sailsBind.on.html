@@ -1,0 +1,17 @@
+<h1>on ($sailsBind.on.html)</h1>
+<p>Capture a given module event.  If $sailsBind.config({broadcastType: "simple"}) is set then this
+is the only way to capture module events (including errors).  If a broadcastType of 'model' or both
+is set then events are broadcast on the $rootScope.  Turning rootScope broadcast off isgood practice
+as dependancies are obvious and events are only dispached to listener, which need to hear.</p>
+<h2>Paramaters</h2>
+<ul>
+  <li>
+    <strong>eventName</strong> { string } - The name of the event to capture.
+  </li>
+  <li>
+    <strong>callback</strong> { function } - The callback for the event.
+  </li>
+  <li>
+    <strong>context</strong> { object } - The 'this' context to use.
+  </li>
+</ul>

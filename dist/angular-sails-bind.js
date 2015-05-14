@@ -1,4 +1,4 @@
-/*! angular-sails-bind - v1.0.5 - 2015-05-12
+/*! angular-sails-bind - v1.0.5 - 2015-05-14
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2015 Diego Pamio; Licensed MIT */
 /*! angular-sails-bind - v1.0.5 - 2015-05-05
@@ -11,10 +11,15 @@
 /*global io:false */
 
 /**
- * Angular service to handle SailsJs resources.
- *
  * @author Diego Pamio - Github: diegopamio
-
+ * @license MIT
+ *
+ * @ngdoc module
+ * @module ngSailsBind
+ *
+ * @description
+ * Angular module to handle binding between SailsJs sever models and AnguarJs models in browsers 
+ *
  * @return {object} Object of methods
  */
 try{ // This is so that angular-sails-bind works well with the module angular-sails.
@@ -26,12 +31,61 @@ try{ // This is so that angular-sails-bind works well with the module angular-sa
     });
 }
 
+/*
+ * @ngdoc service
+ * @kind object
+ * @name $sailsBind
+ */
 angular.module('ngSailsBind').factory('$sailsBind', [
     '$q', '$rootScope', '$timeout', '$log', '$sails',
     function ($q, $rootScope, $timeout, $log, $sails) {
         'use strict';
 
+        var configuration = {
+            autoSave: true,
+            autoUpdate: true,
+            broadcast: {
+                error: false,
+                change: false,
+                models: {}
+            },
+            broadcastType: "model" // Can choose: model|simple|both - model is the backwards compatible version.
+        };
+
+        var defaultConfiguration = angular.copy(configuration);
+
+        var eventRegister = {
+            error: [],
+            change: []
+        };
+
+        var httpErrorLookup = {
+            400: "Malformed resource request.",
+            401: "Not authorized to access this resource.",
+            402: "Payment required to access this resource.",
+            403: "Access to this resource is forbidden.",
+            404: "Resource not found.",
+            405: "Requests to resource using this method is not allowed.",
+            406: "Cannot send resource in acceptable format.",
+            407: "Proxy authentication required to access this resource.",
+            408: "Request timeout.",
+            409: "There is a conflict in your request, which cannot be resolved by the server.",
+            410: "This resource is no-longer available, please update your client.",
+            500: "Server error",
+            501: "Requested service or feature is not implimented",
+            502: "Could not forward the response through proxy.",
+            503: "Server not available.",
+            504: "Proxy timeout."
+        };
+
         /**
+         * @ngdoc function
+         * @name $sailsBind.bind
+         * @module ngSailsBind
+         * @kind function
+         * @public
+         *
+         * @description
          * This function basically does three things:<ol>
          * <li>Creates an array inside $scope and fills it with a socket get call to backend pointed by the
          *     resourceName endpoint.</li>
@@ -53,61 +107,35 @@ angular.module('ngSailsBind').factory('$sailsBind', [
          *                                              Queries} to see what you can send.
          */
         function bind(resourceName, $scope, subset) {
-            var scopeProperty;
-            if(angular.isObject(resourceName)){
-                if(resourceName.hasOwnProperty('scopeProperty')){
-                    scopeProperty = resourceName.scopeProperty;
-                }else{
-                    scopeProperty = resourceName.model.split('/').pop() + 's';
-                }
-                if(resourceName.hasOwnProperty('scope')){
-                    subset = $scope;
-                    $scope = resourceName.scope;
-                }
-                if(resourceName.hasOwnProperty('query')){
-                    subset = resourceName.query;
-                }
-                resourceName = resourceName.model;
-            }else{
-                scopeProperty = resourceName.split('/').pop() + 's';
-            }
-
-
-            var prefix = resourceName.split('/');
-            if(prefix.length>1) {
-                resourceName = prefix.splice(prefix.length - 1, 1);
-                prefix = prefix.join('/') + '/';
-            }else{
-                prefix = '';
-            }
+            var options = getOptions(resourceName, $scope, subset);
 
             var defer_bind = new $q.defer();
             //1. Get the initial data into the newly created model.
-            var requestEnded = _get('/' + prefix + resourceName, subset);
+            var requestEnded = _get(options, '/' + options.prefix + options.model, subset);
 
             requestEnded.then(function (data) {
                 if ( ! angular.isArray(data) ) {
                     data=[data];
                 }
-                setObjectProperty($scope, scopeProperty, data);
-                addCollectionWatchersToSubitemsOf(data, $scope, resourceName, prefix, scopeProperty);
+                setObjectProperty(options.scope, options.scopeProperty, data);
+                addCollectionWatchersToSubitemsOf(data, options);
                 init();
                 defer_bind.resolve();
             });
 
             //2. Hook the socket events to update the model.
             function onMessage(message) {
-                var elements = getObjectProperty($scope, scopeProperty, []),
+                var elements = getObjectProperty(options.scope, options.scopeProperty, []),
                     actions = {
                         created: function () {
-                            getObjectProperty($scope, scopeProperty, []).push(message.data);
+                            getObjectProperty(options.scope, options.scopeProperty, []).push(message.data);
                             return true;
                         },
                         updated: function () {
                             var updatedElement = find(
                                 elements,
                                 function (element) {
-                                    return message.id == element.id;
+                                    return message.id.toString() === element.id.toString();
                                 }
                             );
                             if (updatedElement) {
@@ -120,7 +148,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
                             var deletedElement = find(
                                 elements,
                                 function (element) {
-                                    return message.id == element.id;
+                                    return message.id.toString() === element.id.toString();
                                 }
                             );
                             if (deletedElement) {
@@ -131,21 +159,23 @@ angular.module('ngSailsBind').factory('$sailsBind', [
                         }
                     };
                 if (actions[message.verb]) {
-                    if (actions[message.verb]())
-                        $timeout(function(){ $scope.$apply(); });
+                    if (actions[message.verb]()){
+                        $timeout(function(){ options.scope.$apply(); });
+                    }
                 } else {
                     $log.log('Unknown action »'+message.verb+'«');
                 }
             }
-            $sails.on(resourceName, onMessage);
-            $scope.$on(resourceName, function (event, message) {
-                if ($scope.$id!=message.scope)
+            $sails.on(options.model, onMessage);
+            options.scope.$on(options.model, function (event, message) {
+                if(options.scope.$id !== message.scope){
                     onMessage(message);
+                }
             });
 
             //3. Watch the model for changes and send them to the backend using socket.
             function init() {
-                $scope.$watchCollection(scopeProperty, function (newValues, oldValues) {
+                options.scope.$watchCollection(options.scopeProperty, function (newValues, oldValues) {
                     var addedElements, removedElements;
                     newValues = newValues || [];
                     oldValues = oldValues || [];
@@ -153,21 +183,39 @@ angular.module('ngSailsBind').factory('$sailsBind', [
                     removedElements = diff(oldValues, newValues);
 
                     removedElements.forEach(function (item) {
-                        _get('/' + prefix + resourceName + '?id=' + item.id ).then(function (itemIsOnBackend) {
-                            if (itemIsOnBackend && !itemIsOnBackend.error) {
-                                $rootScope.$broadcast(resourceName, { id: item.id, verb: 'destroyed', scope: $scope.$id });
-                                $sails.delete('/' + prefix + resourceName + '/destroy/' + item.id);
+                        _get(options, '/' + options.prefix + options.model + '?id=' + item.id).then(function (itemIsOnBackend) {
+                            if(itemIsOnBackend && !itemIsOnBackend.error){
+                                fireEvent(options, createEventObject(options, item, 'destroyed'));
+                                fireEvent('change', createChangeObject('destroyed', options, item));
+
+                                var url = '/' + options.prefix + options.model + '/destroy/' + item.id;
+                                $sails.delete(url, function(res, jwres){
+                                    if(jwres.error){
+                                        fireEvent('error', options, createErrorObject(jwres, 'delete', url, {}));
+                                        fireEvent(options, createEventObject(options, item, 'error'));
+                                    }
+                                });
                             }
                         });
                     });
 
-                    addedElements.forEach(function (item) {
+                    addedElements.forEach(function (item){
                         if (!item.id) { //if is a brand new item w/o id from the database
-                            $sails.put('/' + prefix + resourceName + '/create/', item, function (data) {
-                                _get('/' + prefix + resourceName + '/' + data.id ).then(function (newData) {
-                                    angular.extend(item, newData);
-                                    $rootScope.$broadcast(resourceName, { id: item.id, verb: 'created', scope: $scope.$id, data: angular.copy(item) });
-                                });
+                            var url = '/' + options.prefix + options.model + '/create/';
+                            $sails.put(url, item, function (data, jwres) {
+                                if(jwres.error){
+                                    fireEvent('error', options, createErrorObject(jwres, 'put', url, item));
+                                    fireEvent(options, createEventObject(options, item, 'error'));
+                                }else{
+                                    _get(options, '/' + options.prefix + options.model + '/' + data.id).then(function (newData) {
+                                        angular.extend(item, newData);
+                                        fireEvent('change', createChangeObject('created', options, item));
+                                        fireEvent(
+                                            options,
+                                            createEventObject(options, item, 'created', angular.copy(item))
+                                        );
+                                    });
+                                }
                             });
                         }
 
@@ -175,14 +223,51 @@ angular.module('ngSailsBind').factory('$sailsBind', [
 
                     // Add Watchers to each added element
 
-                    addCollectionWatchersToSubitemsOf(addedElements, $scope, resourceName,prefix, scopeProperty);
+                    addCollectionWatchersToSubitemsOf(addedElements, options);
                 });
             };
 
             return defer_bind.promise;
-        };
+        }
+
+        /**
+         * @ngdoc function
+         * @name $sailsBind.default
+         * @module ngSailsBind
+         * @kind function
+         * @public
+         *
+         * @description
+         * Reset the global configuration for this module to default.  Will affect all instances.
+         */
+        function resetConfig(){
+            configuration = angular.copy(defaultConfiguration);
+        }
+
+        /**
+         * @ngdoc function
+         * @name $sailsBind.config
+         * @module ngSailsBind
+         * @kind function
+         * @public
+         *
+         * @description
+         * Set the global configuration for this module.  Will affect all instances (only overwrites
+         * supllied properties).
+         *
+         * @param {object} userConfig       The config object to use (only overwrites supllied properties).
+         */
+        function config(userConfig){
+            merge(configuration, userConfig);
+        }
 
         /*
+         * @ngdoc function
+         * @name $sailsBind.save
+         * @module ngSailsBind
+         * @kind function
+         * @public
+         *
          * @todo    Perform a manual save.  Override needs adding so that changes to models in Angular not always 
          *          propegated to Sails.  Sometimes you want to complete an entire form first or validate.  Save
          *          will be used in these circumstance to save the data to Sails model.
@@ -196,76 +281,353 @@ angular.module('ngSailsBind').factory('$sailsBind', [
         }
 
         /**
-         * @todo    Event reporting.  Will allow notification of errors and changes to models.
+         * @ngdoc function
+         * @name $sailsBind.on
+         * @module ngSailsBind
+         * @kind function
+         * @public
+         * 
+         * @description
+         * Capture a given module event.  If $sailsBind.config({broadcastType: "simple"}) is set then this
+         * is the only way to capture module events (including errors).  If a broadcastType of 'model' or both
+         * is set then events are broadcast on the $rootScope.  Turning rootScope broadcast off isgood practice
+         * as dependancies are obvious and events are only dispached to listener, which need to hear.
          *
          * @public
          * @param {string} eventName        The name of the event to capture.
          * @param {function} callback       The callback for the event.
+         * @param {object} context          The 'this' context to use.
          */
-        function on(eventName, callback){
-
+        function on(eventName, callback, context){
+            if(eventRegister.hasOwnProperty(eventName)){
+                eventRegister[eventName].push({
+                    callback: callback,
+                    context: context
+                });
+            }else{
+                throw new Error('Cannot register for event: ' + eventName);
+            }
         }
 
         /**
+         * @description
+         * Fire an event, providing an supplied paramaters to the registered handlers.
+         * 
+         * @private
+         * @param {string} eventName    The event to fire.
+         */
+        function fireEvent(eventName, options){
+            var broadcastType;
+
+            if(angular.isString(eventName)){
+                var args = [];
+
+                for(var i=1; i<arguments.length; i++){
+                    args.push(arguments[i]);
+                }
+
+                broadcastType = getConfigurationOption('broadcastType', options).toLowerCase();
+                if(eventRegister.hasOwnProperty(eventName)){
+                    angular.forEach(eventRegister[eventName], function(regstration){
+                        regstration.callback.apply(regstration.context, args);
+ 
+                        var canBroadcast = getConfigurationOption('broadcast.'+eventName, options);
+                        if((canBroadcast === true) && ((broadcastType === 'simple') || (broadcastType === 'both'))){
+                            $rootScope.$broadcast.apply(
+                                $rootScope, 
+                                ['angularSailsBind.' + eventName].concat(args)
+                            );
+                        }
+                    });
+                }
+            }else if(angular.isObject(eventName)){
+                var eventObject = options;
+                options = eventName;
+                eventName = options.model;
+
+                broadcastType = getConfigurationOption('broadcastType', options).toLowerCase();
+                var canBroadcast = getConfigurationOption('broadcast.models.'+eventName, options);
+                if((broadcastType === 'model') || (broadcastType === 'both')){
+                    if((canBroadcast === true) || (canBroadcast === undefined)){
+                        $rootScope.$broadcast(eventName, eventObject);
+                    }
+                }
+            }
+        }
+
+        /**
+         * @description
          * Adds watchers to each item in the model to perform the "post" when something there changes.
          *
-         * @param {string} model            The model to watch.
-         * @param {object} scope            The scope where the model belongs to.
-         * @param {string} resourceName     The "singular" version of the model as used by sailsjs.
-         * @param {string} prefix           The api prefix to use.
-         * @param {string} scopeProperty    The scope property to bind to
+         * @private
+         * @param {Array} addedElements             The new elements.
+         * @param {Object} options                  An options object (as returned by getOptions().
+         * @param {string} options.model            The "singular" version of the model as used by sailsjs.
+         * @param {string} options.prefix           The api prefix to use.
+         * @param {string} options.scopeProperty    The scope property to bind to
          */
-        function addCollectionWatchersToSubitemsOf(model, scope, resourceName, prefix, scopeProperty) {
-            model.forEach(function (item) {
-                scope.$watchCollection(
-                    scopeProperty + '[' + getObjectProperty(scope, scopeProperty, []).indexOf(item) + ']',
-                    function (newValue, oldValue) {
+        function addCollectionWatchersToSubitemsOf(addedElements, options) {
+            addedElements.forEach(function (item) {
+                options.scope.$watchCollection(
+                    options.scopeProperty + '[' + getObjectProperty(options.scope, options.scopeProperty, []).indexOf(item) + ']',
+                    function (newValue, oldValue){
 
                         if (oldValue && newValue) {
                             if (!angular.equals(oldValue, newValue) && // is in the database and is not new
-                                oldValue.id == newValue.id && //not a shift
+                                oldValue.id === newValue.id && //not a shift
                                 oldValue.updatedAt === newValue.updatedAt) { //is not an update FROM backend
-                                $rootScope.$broadcast(resourceName, { id: oldValue.id, verb: 'updated', scope: scope.$id, data: angular.extend(angular.copy(newValue),{ updatedAt: (new Date()).toISOString() }) });
-                                $sails.post('/' + prefix  + resourceName + '/update/' + oldValue.id,
-                                    angular.copy(newValue));
+                                fireEvent(
+                                    options,
+                                    createEventObject(options, oldValue, 'updated', angular.extend(
+                                        angular.copy(newValue),
+                                        { updatedAt: (new Date()).toISOString() }
+                                    ))
+                                );
+                                fireEvent('updated', createChangeObject('destroyed', options, oldValue));
+                                var url = '/' + options.prefix  + options.model + '/update/' + oldValue.id;
+                                var additional = angular.copy(newValue);
+                                $sails.post(url, additional,
+                                    function(res, jwres){
+                                        if(jwres.error){
+                                            fireEvent(
+                                                'error', options, createErrorObject(jwres, 'post', url, additional)
+                                            );
+                                            fireEvent(options, createEventObject(options, oldValue, 'error'));
+                                        }
+                                    }
+                                );
                             }
                         }
                     }
                 );
             });
-        };
+        }
+
+        /*
+         * @description
+         * Convert the given parameters into an options object, which defines the user chosen options for the 
+         * current model binding.  Some properties of the object are calculated from those supplied and
+         * some generated.
+         *
+         * @private
+         * @param {string|object} resourceName          Either an object defining the bind requirements or the name of 
+         *                                              the resource in the backend to bind, can have prefix route.
+         * @param {string} resourceName.module          The sails model to bind to.
+         * @param {Object} [resourceName.scopeProperty] The property within scope to use (can be sub-property - use 
+         *                                              dots to declare specific sub-property).
+         * @param {Object} [resourceName.query]         The database query to use (will override the subset parameter).
+         * @param {Object} [resourceName.scope]         The scope object to use (will override the $scope parameter).
+         * @param {Object} [$scope]                     The scope where to attach the bounded model.
+         * @param {Object} [subset]                     The query parameters where you can filter and sort your 
+         *                                              initial model fill. check {@link http://beta.sailsjs.org
+         *                                              /#!documentation/reference/Blueprints/FindRecords.html|Blueprint
+         *                                              Queries} to see what you can send.
+         * @returns {Object}                            The options object.
+         */
+        function getOptions(options, $scope, subset){
+            if(angular.isObject(options)){
+                if(!options.hasOwnProperty('scopeProperty')){
+                    options.scopeProperty = options.model.split('/').pop() + 's';
+                }
+                if((!options.hasOwnProperty('scope'))  && ($scope !== undefined)){
+                    options.scope = $scope;
+                }
+                if((!options.hasOwnProperty('query'))  && (subset !== undefined)){
+                    subset = options.query;
+                }
+            }else{
+                options = {
+                    model: options,
+                    scopeProperty: options.split('/').pop() + 's',
+                    scope: $scope
+                };
+                if(subset !== undefined){
+                    options.query = subset;
+                }
+            }
+
+            options.prefix = options.model.split('/');
+            if(options.length>1) {
+                options.model = options.prefix.splice(options.prefix.length - 1, 1);
+                options.prefix = options.prefix.join('/') + '/';
+            }else{
+                options.prefix = '';
+            }
+
+            return options;
+        }
 
         /**
+         * @description
+         * Get a config option within the current binding.  Looks first to the current options and if not
+         * found, get from the global configuration object.
+         *
+         * @private
+         * @param {string} propertyName     The property to get (use dots to indicate sub-properties).
+         * @param {Object} options          Options for current binding.
+         * @returns {mixed}                 The actual config option value.
+         */
+        function getConfigurationOption(propertyName, options){
+            return getObjectProperty(
+                options,
+                propertyName,
+                getObjectProperty(configuration, propertyName)
+            );
+        }
+
+        /**
+         * @description
          * Internal "get" function inherited. it does the standard request, but it also returns a promise instead
          * of calling the callback.
          *
+         * @todo    This passes unit testing but fails in real world use when using angular-sails.  This needs some
+         *          sort of unit test as is supposed to work. Obviously, function is never reached as then is needed.
+         *          This will require the Unit Testing being rewritten or some detection of then() to use when available.
+         *
          * @private
+         * @param {Object} option           The current model binding options object.
          * @param {string} url              Url of the request.
-         * @param {object} additional       Extra info (usually a query restriction)
+         * @param {object} [additional]       Extra info (usually a query restriction)
          * @returns {Deferred.promise|*}
          */
-        function _get(url, additional) {
+        function _get(options, url, additional) {
             var defer = new $q.defer();
             additional  = additional || {};
 
-            $sails.get(url, additional, function (res) {
-                $rootScope.$apply(defer.resolve(res));
+            $sails.get(url, additional, function (res, jwres) {
+                if(jwres.error){
+                    fireEvent('error', options, createErrorObject(jwres, 'get', url, additional));
+                    fireEvent(options, createEventObject(options, 'error'));
+                }else{
+                    $rootScope.$apply(defer.resolve(res));
+                }
             });
+            
             return defer.promise;
-        };
+        }
 
         /**
+         * @description
+         * Get an error object to issue. This is boradcastType = 'simple', in the global configuration.
+         *
+         * @private
+         * @param {Object} jwres        The jwres object returned by Sails Socket.io
+         * @param {string} method       The http method used (usually one of: get|post|put|delete).
+         * @param {string} url          The url requested.
+         * @param {Object} additional   Any query used in the API call.
+         */
+        function createErrorObject(jwres, method, url, additional){
+            return {
+                target: {
+                    src: url,
+                    method: method,
+                    content: additional || {}
+                },
+                type: jwres.statusCode,
+                message: getErrorMessage(jwres.statusCode, jwres.body)
+            };
+        }
+
+        /**
+         * @description
+         * Create a change event object. This is boradcastType = 'simple', in the global configuration.
+         *
+         * @private
+         * @param {string} type         The change type.
+         * @param {Object} options      The current bindings options object.
+         * @param {Object} item         The item which is the cause of the event.
+         * @returns {Object}
+         */
+        function createChangeObject(type, options, item){
+            return {
+                target: {
+                    scopeProperty: options.scopeProperty,
+                    id: item.id
+                },
+                type: type
+            };
+        }
+
+        /**
+         * @description
+         * Create an event object to be issued via $rootScope.$broadcast.  This is boradcastType = 'model', in
+         * the global configuration.
+         *
+         * @private
+         * @param {Object} options      The current bindings options object.
+         * @param {Object} item         The item which is the cause of the event.
+         * @param {string} verb         Word describing the event (ie. event type).
+         * @param {Array} [data]        Any data relating to the event
+         * @returnd {Object}
+         */
+        function createEventObject(options, item, verb, data){
+            var eventObj;
+
+            if(angular.isString(item)){
+                eventObj = {verb: item, scope: options.scope.$id};
+                data = verb;
+            }else{
+                eventObj = {id: item.id, verb: verb, scope: options.scope.$id};
+            }
+            
+            if(data !== undefined){
+                eventObj.data = data;
+            }
+
+            return eventObj;
+        }
+
+
+        /**
+         * @description
+         * Get an error message for a given status code.  Will return the error message from the server, stored
+         * in body parameter.  If body is empty then look-up status code and return a suitable message.  If code
+         * cannot be found return undefined
+         *
+         * @private
+         * @param {number} statusCode       The http status code.
+         * @param {string} body             The error message string, issued by the server.
+         * @returns {string|undefined}      The error message string.
+         */
+        function getErrorMessage(statusCode, body){
+            if(angular.isString(body)){
+                return body;
+            }else{
+                if(httpErrorLookup.hasOwnProperty(statusCode)){
+                    return httpErrorLookup[statusCode];
+                }
+            }
+
+            return undefined;
+        }
+
+        /**
+         * @description
          * Is the factory being executed with a Unit Test?  Useful for exporting private methods for testing.
          *
          * @private
          * @return {boolean}
          */
         function isUnitTest(){
-            return ((window.hasOwnProperty('describe')) && (window.hasOwnProperty('it')));
+            var global;
+
+            /* jshint ignore:start */
+            try {
+                global = Function('return this')() || (42, eval)('this');
+            }catch(e){
+                global = window;
+            }
+            /* jshint ignore:end */
+
+            return ((global.hasOwnProperty('describe')) && (global.hasOwnProperty('it')));
         }
 
         /**
+         * @description
          * Set a property within an object. Can set properties deep within objects using dot-notation.
+         *
+         * @todo    Unit Tests need to be more robust as this was passing but failing in real world use.  See
+         *          git:f3a56211273315ea73c267dc5c841b2293e1e446 for code, which should fail due to code error.
          *
          * @private
          * @param {object} obj          Object to set property on.
@@ -277,13 +639,14 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             var cObj = obj;
             var lastPart = parts.pop();
             while(parts.length){
-                obj[parts[0]] = angular.isObject(obj[parts[0]]) || {};
+                cObj[parts[0]] = obj[parts[0]] || {};
                 cObj = obj[parts.shift()];
             }
             cObj[lastPart] = value;
         }
 
         /**
+         * @description
          * Get a property value within an object.  Can retrieve from deeply within the object
          * using dot-notation.
          * 
@@ -295,11 +658,12 @@ angular.module('ngSailsBind').factory('$sailsBind', [
          */
         function getObjectProperty(obj, property, defaultValue){
             property = ((angular.isArray(property))?property:property.split('.'));
-            while(property.length && (obj = obj[property.shift()]));
+            while(property.length && (obj = obj[property.shift()])){}
             return ((obj === undefined)?defaultValue:obj);
         }
 
         /**
+         * @description
          * Array differencing function.
          *
          * @private
@@ -314,6 +678,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
         }
 
         /**
+         * @description
          * ES6 Array method (Array.prototype.find()).  Returns a value in the array, if an element in the
          * array satisfies the provided testing function. Otherwise undefined is returned.
          * 
@@ -340,10 +705,40 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             return undefined;
         }
 
+        /*
+         * @description
+         * Perform a deep extend on the supplied objects.  Similar to angular.merge() in v1.4+ of angular.
+         * However, this does not merge fromthe prototype.
+         *
+         * @private
+         * @param {Object} dest     Object to merge into.
+         * @param {...Object}       Objects to merge into dest.
+         * @returns {Object}        Reference to dest object.
+         */
+        function merge(dest){
+            for(var n=1; n<arguments.length; n++){
+                for(var property in arguments[n]){
+                    if(arguments[n].hasOwnProperty(property)){
+                        if(angular.isObject(arguments[n][property])){
+                            if(angular.isObject(dest[property])){
+                                merge(dest[property], arguments[n][property]);
+                                continue;
+                            }
+                        }
+                        dest[property] = arguments[n][property];
+                    }
+                }
+            }
+
+            return dest;
+        }
+
         var angularSailsBind = {
-            bind: bind,
-            on: on,
-            save: save
+            'bind': bind,
+            'on': on,
+            'save': save,
+            'config': config,
+            'default': resetConfig
         };
 
         if(isUnitTest()){

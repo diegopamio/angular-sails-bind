@@ -1,0 +1,17 @@
+<h1>getErrorMessage (getErrorMessage.html)</h1>
+<p>Get an error message for a given status code.  Will return the error message from the server, stored
+in body parameter.  If body is empty then look-up status code and return a suitable message.  If code
+cannot be found return undefined</p>
+<h2>Paramaters</h2>
+<ul>
+  <li>
+    <strong>statusCode</strong> { number } - The http status code.
+  </li>
+  <li>
+    <strong>body</strong> { string } - The error message string, issued by the server.
+  </li>
+</ul>
+<h2>Returns</h2>
+<p>
+  { string,undefined } - The error message string.
+</p>
