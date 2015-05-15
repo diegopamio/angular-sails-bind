@@ -74,7 +74,7 @@ describe('the angular sailsjs bind service', function () {
             ];
 
             //Mock the initial "get all"
-            io.socket.when.get["/" + modelName] = {return: defaultData};
+            io.socket.when.get["/" + modelName + "/"] = {return: defaultData};
 
             //Do the binding.
             $sailsBind.bind(modelName, $rootScope);
@@ -85,7 +85,7 @@ describe('the angular sailsjs bind service', function () {
             expect($rootScope[scopeProperty]).to.be.an("array");
         });
         it('should load the model with the contents from the backend', function () {
-            expect(io.socket.requestCalled.url).to.equal("/" + modelName);
+            expect(io.socket.requestCalled.url).to.equal("/" + modelName + "/");
 
             expect($rootScope[scopeProperty]).to.deep.equal(defaultData);
         });
@@ -209,7 +209,7 @@ describe('the angular sailsjs bind service', function () {
             ];
 
             //Mock the initial "get all"
-            io.socket.when.get["/" + modelName] = {return: defaultData};
+            io.socket.when.get["/" + modelName + "/"] = {return: defaultData};
 
             //Do the binding.
             $sailsBind.bind({
@@ -224,7 +224,7 @@ describe('the angular sailsjs bind service', function () {
         });
 
         it('should load the model with the contents from the backend', function () {
-            expect(io.socket.requestCalled.url).to.equal("/" + modelName);
+            expect(io.socket.requestCalled.url).to.equal("/" + modelName + "/");
 
             expect($rootScope[scopeProperty]).to.deep.equal(defaultData);
         });
@@ -242,7 +242,7 @@ describe('the angular sailsjs bind service', function () {
             ];
 
             //Mock the initial "get all"
-            io.socket.when.get["/" + modelName] = {return: defaultData};
+            io.socket.when.get["/" + modelName + "/"] = {return: defaultData};
 
             //Do the binding.
             $sailsBind.bind({
@@ -257,7 +257,7 @@ describe('the angular sailsjs bind service', function () {
         });
 
         it('should load the model with the contents from the backend', function () {
-            expect(io.socket.requestCalled.url).to.equal("/" + modelName);
+            expect(io.socket.requestCalled.url).to.equal("/" + modelName + "/");
 
             expect($sailsBind.getObjectProperty($rootScope, scopeProperty)).to.deep.equal(defaultData);
         });
@@ -275,7 +275,7 @@ describe('the angular sailsjs bind service', function () {
             ];
 
             //Mock the initial "get all"
-            io.socket.when.get["/api/" + modelName] = {return: defaultData};
+            io.socket.when.get["/api/" + modelName + "/"] = {return: defaultData};
 
             //Do the binding.
             $sailsBind.bind("api/" + modelName, $rootScope);
@@ -286,7 +286,7 @@ describe('the angular sailsjs bind service', function () {
             expect($rootScope[scopeProperty]).to.be.an("array");
         });
         it('should load the model with the contents from the backend', function () {
-            expect(io.socket.requestCalled.url).to.equal("/api/" + modelName);
+            expect(io.socket.requestCalled.url).to.equal("/api/" + modelName + "/");
 
             expect($rootScope[scopeProperty]).to.deep.equal(defaultData);
         });
@@ -408,7 +408,7 @@ describe('the angular sailsjs bind service', function () {
             {'id': '1', 'modelAttribute1': "string", 'modelAttribute2': 'another string'};
 
             //Mock the initial "get all"
-            io.socket.when.get["/api/" + modelName] = {return: defaultData};
+            io.socket.when.get["/api/" + modelName + "/"] = {return: defaultData};
 
             //Do the binding.
             $sailsBind.bind('api/' + modelName, $rootScope);
@@ -431,7 +431,7 @@ describe('the angular sailsjs bind service', function () {
             {'id': '1', 'modelAttribute1': "string", 'modelAttribute2': 'another string'};
 
             //Mock the initial "get all"
-            io.socket.when.get["/" + modelName] = {return: defaultData};
+            io.socket.when.get["/" + modelName + "/"] = {return: defaultData};
 
             //Do the binding.
             $sailsBind.bind(modelName, $rootScope);
