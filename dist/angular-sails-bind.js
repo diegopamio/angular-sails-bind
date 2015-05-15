@@ -59,6 +59,8 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             change: []
         };
 
+        var bindings = {};
+
         var httpErrorLookup = {
             400: "Malformed resource request.",
             401: "Not authorized to access this resource.",
@@ -116,6 +118,9 @@ angular.module('ngSailsBind').factory('$sailsBind', [
                 if (!angular.isArray(data)){
                     data=[data];
                 }
+                var binding = getBinding(options.scope, options.scopeProperty);
+                binding.data = data;
+                binding.updatedData = angular.copy(data);
                 setObjectProperty(options.scope, options.scopeProperty, data);
                 addCollectionWatchersToSubitemsOf(data, options);
                 initModel(options);  //3. Watch the model for changes and send them to the backend using socket.
@@ -184,12 +189,25 @@ angular.module('ngSailsBind').factory('$sailsBind', [
                 options.prefix = '';
             }
 
+            var binding = getBinding(options.scope, options.scopeProperty, true);
+            binding.options = options;
+
             return options;
         }
 
         function onMessage(options, message) {
-            var elements = getObjectProperty(options.scope, options.scopeProperty, []);
+            var elements = [];
             var actions = {created: onCreated, updated: onUpdated, destroyed: onDestroyed};
+            var autoUpdate = getConfigurationOption('autoUpdate', options);
+
+            if(autoUpdate){
+                elements = getObjectProperty(options.scope, options.scopeProperty, []);
+            }else{
+                var binding = getBinding(options.scope, options.scopeProperty);
+                if(binding){
+                    elements = binding.updatedData;
+                }
+            }
 
             if (actions[message.verb]) {
                 if (actions[message.verb](options, message, elements)){
@@ -203,7 +221,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
         }
 
         function onCreated(options, message, elements){
-            getObjectProperty(options.scope, options.scopeProperty, []).push(message.data);
+            elements.push(message.data);
             return true;
         }
 
@@ -215,6 +233,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
                 angular.extend(updatedElement, message.data);
                 return true;
             }
+            
             return false;
         }
 
@@ -251,24 +270,29 @@ angular.module('ngSailsBind').factory('$sailsBind', [
 
         function removeElementFromModel(options, item){
             var url = getSailsApiRoute(options, null, item.id);
-            _get(options, url).then(function (itemIsOnBackend) {
-                if(itemIsOnBackend && !itemIsOnBackend.error){
-                    fireEvent(options, createEventObject(options, item, 'destroyed'));
-                    fireEvent('change', createChangeObject('destroyed', options, item));
-                                
-                    url = getSailsApiRoute(options, 'destroy', item.id);
-                    $sails.delete(url, function(res, jwres){
-                        if(jwres.error){
-                            fireEvent('error', options, createErrorObject(jwres, 'delete', url, {}));
-                            fireEvent(options, createEventObject(options, item, 'error'));
-                        }
-                    });
-                }
-            });
+            var autoSave = getConfigurationOption('autoSave', options);
+
+            if(autoSave){
+                _get(options, url).then(function (itemIsOnBackend) {
+                    if(itemIsOnBackend && !itemIsOnBackend.error){
+                        fireEvent(options, createEventObject(options, item, 'destroyed'));
+                        fireEvent('change', createChangeObject('destroyed', options, item));
+                    
+                        url = getSailsApiRoute(options, 'destroy', item.id);
+                        $sails.delete(url, function(res, jwres){
+                            if(jwres.error){
+                                fireEvent('error', options, createErrorObject(jwres, 'delete', url, {}));
+                                fireEvent(options, createEventObject(options, item, 'error'));
+                            }
+                        });
+                    }
+                });
+            }
         }
 
         function addElementToModel(options, item){
-            if (!item.id) { //if is a brand new item w/o id from the database
+            var autoSave = getConfigurationOption('autoSave', options);
+            if (!item.id  && autoSave) { //if is a brand new item w/o id from the database
                 var url = getSailsApiRoute(options, 'create');
                 $sails.put(url, item, function (data, jwres) {
                     if(jwres.error){
@@ -332,22 +356,43 @@ angular.module('ngSailsBind').factory('$sailsBind', [
          * @kind function
          * @public
          *
-         * @todo    Perform a manual save.  Override needs adding so that changes to models in Angular not always 
-         *          propegated to Sails.  Sometimes you want to complete an entire form first or validate.  Save
-         *          will be used in these circumstance to save the data to Sails model.
+         * Perform a manual save.  This if useful if automatic saving is turned off.
          *
          * @public
+         * @param {Object} scope            Angular scope, which the model is attached to.
          * @param {string} scopeProperty    The scope variable, which is changed and needs saving to sails (must be
          *                                  property, which already bound to Sails model).
          */
-        function save(scopeProperty){
+        function save(scope, scopeProperty){
             var binding = getBinding(scope, scopeProperty);
             if(binding){
-                watcher(
-                    binding.options,
-                    binding.data,
-                    getObjectProperty(binding.options.scope, binding.scopeProperty)
-                )
+                var options = angular.copy(binding.options);
+                options.autoSave = true;
+                watcher(options, binding.data, getObjectProperty(scope, scopeProperty))
+            }
+        }
+
+        function update(scope, scopeProperty){
+            var binding = getBinding(scope, scopeProperty);
+            if(binding){
+                var options = angular.copy(binding.options);
+                options.autoUpdate = true;
+                watcher(options, binding.updatedData, getObjectProperty(scope, scopeProperty))
+            }
+        }
+
+        function getBinding(scope, scopeProperty, create){
+            if(bindings.hasOwnProperty(scopeProperty)){
+                if(bindings[scopeProperty].hasOwnProperty(scope.$id)){
+                    return bindings[scopeProperty][scope.$id];
+                }else if(create){
+                    bindings[scopeProperty][scope.$id] = {};
+                    return bindings[scopeProperty][scope.$id];ga
+                }
+            }else if(create){
+                bindings[scopeProperty] = {};
+                bindings[scopeProperty][scope.$id] = {};
+                return bindings[scopeProperty][scope.$id];
             }
         }
 
@@ -460,14 +505,18 @@ angular.module('ngSailsBind').factory('$sailsBind', [
                         );
                         fireEvent(options, createEventObject(options, oldValue, 'updated', eventData));
                         fireEvent('updated', createChangeObject('updated', options, eventData));
-                        var url = getSailsApiRoute(options, 'update', oldValue.id);
-                        var additional = angular.copy(newValue);
-                        $sails.post(url, additional, function(res, jwres){
-                            if(jwres.error){
-                                fireEvent('error', options, createErrorObject(jwres, 'post', url, additional));
-                                fireEvent(options, createEventObject(options, oldValue, 'error'));
-                            }
-                        });
+
+                        var autoSave = getConfigurationOption('autoSave', options);
+                        if(autoSave){
+                            var url = getSailsApiRoute(options, 'update', oldValue.id);
+                            var additional = angular.copy(newValue);
+                            $sails.post(url, additional, function(res, jwres){
+                                if(jwres.error){
+                                    fireEvent('error', options, createErrorObject(jwres, 'post', url, additional));
+                                    fireEvent(options, createEventObject(options, oldValue, 'error'));
+                                }
+                            });
+                        }
                     }
                 }
             }
