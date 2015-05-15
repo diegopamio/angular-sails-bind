@@ -134,7 +134,7 @@ describe('the angular sailsjs bind service', function () {
 
             //Mock the server to return the new item after it Setup so that the backend
             //     returns the newly created item with the id.
-            io.socket.when.get["/" + modelName + "/" + newElementAsReturnedByBackend.id] = {
+            io.socket.when.get["/" + modelName + "/?id=" + newElementAsReturnedByBackend.id] = {
                 return: newElementAsReturnedByBackend
             };
 
@@ -157,14 +157,14 @@ describe('the angular sailsjs bind service', function () {
             io.socket.when.get["/" + modelName + "?id=" + removedData.id] = {return: removedData};
 
             //Setup the socket mock to return the id of the deleted item
-            io.socket.when.delete["/" + modelName + "/destroy/" + removedData.id] = {return: removedData};
+            io.socket.when.delete["/" + modelName + "/destroy/?id=" + removedData.id] = {return: removedData};
 
             //Modify the model (actually "apply" and "flush" the deletion).
             $rootScope.$apply();
             $timeout.flush();
 
             //Check that things were sent to the server as expected
-            expect(io.socket.deleteCalled.url).to.equal("/" + modelName + "/destroy/" + removedData.id);
+            expect(io.socket.deleteCalled.url).to.equal("/" + modelName + "/destroy/?id=" + removedData.id);
         });
 
         it('should persist in the backend when a new element is MODIFIED in the client', function () {
@@ -181,7 +181,7 @@ describe('the angular sailsjs bind service', function () {
             $rootScope.$apply();
 
             //Check that things were sent to the server as expected
-            expect(io.socket.postCalled.url).to.equal("/" + modelName + "/update/" + dataToModify.id);
+            expect(io.socket.postCalled.url).to.equal("/" + modelName + "/update/?id=" + dataToModify.id);
             expect(io.socket.postCalled.data).to.deep.equal(dataToModify);
         });
 
@@ -335,7 +335,7 @@ describe('the angular sailsjs bind service', function () {
 
             //Mock the server to return the new item after it Setup so that the backend
             //     returns the newly created item with the id.
-            io.socket.when.get["/api/" + modelName + "/" + newElementAsReturnedByBackend.id] = {
+            io.socket.when.get["/api/" + modelName + "/?id=" + newElementAsReturnedByBackend.id] = {
                 return: newElementAsReturnedByBackend
             };
 
@@ -358,14 +358,14 @@ describe('the angular sailsjs bind service', function () {
             io.socket.when.get["/api/" + modelName + "?id=" + removedData.id] = {return: removedData};
 
             //Setup the socket mock to return the id of the deleted item
-            io.socket.when.delete["/api/" + modelName + "/destroy/" + removedData.id] = {return: removedData};
+            io.socket.when.delete["/api/" + modelName + "/destroy/?id=" + removedData.id] = {return: removedData};
 
             //Modify the model (actually "apply" and "flush" the deletion).
             $rootScope.$apply();
             $timeout.flush();
 
             //Check that things were sent to the server as expected
-            expect(io.socket.deleteCalled.url).to.equal("/api/" + modelName + "/destroy/" + removedData.id);
+            expect(io.socket.deleteCalled.url).to.equal("/api/" + modelName + "/destroy/?id=" + removedData.id);
         });
 
         it('should persist in the backend when a new element is MODIFIED in the client', function () {
@@ -382,7 +382,7 @@ describe('the angular sailsjs bind service', function () {
             $rootScope.$apply();
 
             //Check that things were sent to the server as expected
-            expect(io.socket.postCalled.url).to.equal("/api/" + modelName + "/update/" + dataToModify.id);
+            expect(io.socket.postCalled.url).to.equal("/api/" + modelName + "/update/?id=" + dataToModify.id);
             expect(io.socket.postCalled.data).to.deep.equal(dataToModify);
         });
 

@@ -105,6 +105,10 @@ module.exports = function (config) {
             dir: 'test/coverage'
         },
 
+        mochaReporter: {
+            output: 'full'
+        },
+
         // web server port
         port: 9876,
 
