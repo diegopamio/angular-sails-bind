@@ -82,9 +82,12 @@ module.exports = function (grunt) {
             }
         },
         watch: {
-            gruntfile: {
-                files: '<%= jshint.gruntfile.src %>',
-                tasks: ['jshint:gruntfile', 'karma']
+            js: {
+                files: 'lib/<%= pkg.name %>.js',
+                tasks: ['jshint', 'karma'],
+                options: {
+                    spawn: false,
+                }
             }
         }
     });

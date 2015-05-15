@@ -59,6 +59,8 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             change: []
         };
 
+        var bindings = {};
+
         var httpErrorLookup = {
             400: "Malformed resource request.",
             401: "Not authorized to access this resource.",
@@ -114,7 +116,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             var requestEnded = _get(options, '/' + options.prefix + options.model, subset);
 
             requestEnded.then(function (data) {
-                if ( ! angular.isArray(data) ) {
+                if(!angular.isArray(data)){
                     data=[data];
                 }
                 setObjectProperty(options.scope, options.scopeProperty, data);
@@ -174,60 +176,72 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             });
 
             //3. Watch the model for changes and send them to the backend using socket.
-            function init() {
-                options.scope.$watchCollection(options.scopeProperty, function (newValues, oldValues) {
-                    var addedElements, removedElements;
-                    newValues = newValues || [];
-                    oldValues = oldValues || [];
-                    addedElements =  diff(newValues, oldValues);
-                    removedElements = diff(oldValues, newValues);
+            function init(){
+                options.scope.$watchCollection(options.scopeProperty, watcher);
+            };
 
-                    removedElements.forEach(function (item) {
-                        _get(options, '/' + options.prefix + options.model + '?id=' + item.id).then(function (itemIsOnBackend) {
-                            if(itemIsOnBackend && !itemIsOnBackend.error){
-                                fireEvent(options, createEventObject(options, item, 'destroyed'));
-                                fireEvent('change', createChangeObject('destroyed', options, item));
+            function watcher(newValues, oldValues){
+                newValues = newValues || [];
+                oldValues = oldValues || [];
 
-                                var url = '/' + options.prefix + options.model + '/destroy/' + item.id;
-                                $sails.delete(url, function(res, jwres){
-                                    if(jwres.error){
-                                        fireEvent('error', options, createErrorObject(jwres, 'delete', url, {}));
-                                        fireEvent(options, createEventObject(options, item, 'error'));
-                                    }
-                                });
-                            }
-                        });
+                var addedElements =  diff(newValues, oldValues);
+                var removedElements = diff(oldValues, newValues);
+
+                removedElements.forEach(removeElement);
+                addedElements.forEach(addElement);
+
+                // Add Watchers to each added element
+                addCollectionWatchersToSubitemsOf(addedElements, options);
+            }
+
+            function addElement(item){
+                if ((!item.id) && (getConfigurationOption(options, "autoSave"))){ //if is a brand new item w/o id from the database
+                    var url = getSailsApiRoute(options, 'create');
+                    $sails.put(url, item, function(data, jwres){
+                        if(jwres.error){
+                            fireEvent('error', options, createErrorObject(jwres, 'put', url, item));
+                            fireEvent(options, createEventObject(options, item, 'error'));
+                        }else{
+                            url = getSailsApiRoute(options, null, data.id);
+                            _get(options, url).then(function(newData){
+                                angular.extend(item, newData);
+                                fireEvent('change', createChangeObject('created', options, item));
+                                fireEvent(options, createEventObject(options, item, 'created', angular.copy(item)));
+                            });
+                        }
                     });
+                }
+            }
 
-                    addedElements.forEach(function (item){
-                        if (!item.id) { //if is a brand new item w/o id from the database
-                            var url = '/' + options.prefix + options.model + '/create/';
-                            $sails.put(url, item, function (data, jwres) {
+            function removeElement(item){
+                var url = getSailsApiRoute(options, null, item.id);
+                _get(options, url).then(function(itemIsOnBackend){
+                    if(itemIsOnBackend && !itemIsOnBackend.error){
+                        fireEvent(options, createEventObject(options, item, 'destroyed'));
+                        fireEvent('change', createChangeObject('destroyed', options, item));
+
+                        if(getConfigurationOption(options, "autoSave")){
+                            url = getSailsApiRoute(options, 'destroy', item.id);
+                            $sails.delete(url, function(res, jwres){
                                 if(jwres.error){
-                                    fireEvent('error', options, createErrorObject(jwres, 'put', url, item));
+                                    fireEvent('error', options, createErrorObject(jwres, 'delete', url, {}));
                                     fireEvent(options, createEventObject(options, item, 'error'));
-                                }else{
-                                    _get(options, '/' + options.prefix + options.model + '/' + data.id).then(function (newData) {
-                                        angular.extend(item, newData);
-                                        fireEvent('change', createChangeObject('created', options, item));
-                                        fireEvent(
-                                            options,
-                                            createEventObject(options, item, 'created', angular.copy(item))
-                                        );
-                                    });
                                 }
                             });
                         }
-
-                    });
-
-                    // Add Watchers to each added element
-
-                    addCollectionWatchersToSubitemsOf(addedElements, options);
+                    }
                 });
-            };
+            }
 
             return defer_bind.promise;
+        }
+
+        function getSailsApiRoute(options, verb, id){
+            var url = '/' + options.prefix + options.model;
+            url += ((verb)?'/'+verb:'');
+            url += ((id)?'?id='+id);
+
+            return url;
         }
 
         /**
@@ -276,8 +290,33 @@ angular.module('ngSailsBind').factory('$sailsBind', [
          * @param {string} scopeProperty    The scope variable, which is changed and needs saving to sails (must be
          *                                  property, which already bound to Sails model).
          */
-        function save(scopeProperty){
+        function save(scope, scopeProperty){
+            console.log("Ready to save -3"); 
+            if(bindings.hasOwnProperty(scopeProperty)){
+                console.log("Ready to save - 2"); 
+                if(bindingsbindings[scopeProperty].hasOwnProperty(scope.$id)){
+                    console.log("Ready to save -1"); 
+                    var options = bindings[scopeProperty][scope.$id];
+                    var url = getSailsApiRoute(options, 'update');
+                    if(options.hasOwnProperty('query')){
+                        if(options.query.hasOwnProperty('id')){
+                            url += '/' + options.query.id;
+                        }
+                    }
 
+                    console.log("Ready to save"); 
+                    /*$sails.post(url, getObjectProperty(scope, scopeProperty),
+                        function(res, jwres){
+                            if(jwres.error){
+                                fireEvent('error', options, createErrorObject(jwres, 'post', url, additional));
+                                fireEvent(options, createEventObject(options, oldValue, 'error'));
+                            }else{
+                                console.log("SAVED");  
+                            }
+                        }
+                    );*/
+                }
+            }
         }
 
         /**
@@ -384,18 +423,22 @@ angular.module('ngSailsBind').factory('$sailsBind', [
                                     ))
                                 );
                                 fireEvent('updated', createChangeObject('destroyed', options, oldValue));
-                                var url = '/' + options.prefix  + options.model + '/update/' + oldValue.id;
-                                var additional = angular.copy(newValue);
-                                $sails.post(url, additional,
-                                    function(res, jwres){
-                                        if(jwres.error){
-                                            fireEvent(
-                                                'error', options, createErrorObject(jwres, 'post', url, additional)
-                                            );
-                                            fireEvent(options, createEventObject(options, oldValue, 'error'));
+
+                                if(getConfigurationOption(options, "autoSave")){
+                                    var url = getSailsApiRoute(options, 'update', oldValue.id);
+                                    var additional = angular.copy(newValue);
+                                    $sails.post(url, additional,
+                                        function(res, jwres){
+                                            if(jwres.error){
+                                                fireEvent(
+                                                    'error', options, createErrorObject(jwres, 'post', url, additional)
+                                                );
+                                                fireEvent(options, createEventObject(options, oldValue, 'error'));
+                                            }
                                         }
-                                    }
-                                );
+                                    );
+                                }
+                                
                             }
                         }
                     }
@@ -453,6 +496,12 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             }else{
                 options.prefix = '';
             }
+
+            bindings[options.scopeProperty] = (
+                (bindings.hasOwnProperty(options.scopeProperty))?
+                bindings[options.scopeProperty] : {}
+            );
+            bindings[options.scopeProperty][options.scope.$id] = options;
 
             return options;
         }
