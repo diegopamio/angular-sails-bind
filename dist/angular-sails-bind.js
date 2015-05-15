@@ -1,4 +1,4 @@
-/*! angular-sails-bind - v1.0.5 - 2015-05-14
+/*! angular-sails-bind - v1.0.5 - 2015-05-15
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2015 Diego Pamio; Licensed MIT */
 /*! angular-sails-bind - v1.0.5 - 2015-05-05
@@ -59,8 +59,6 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             change: []
         };
 
-        var bindings = {};
-
         var httpErrorLookup = {
             400: "Malformed resource request.",
             401: "Not authorized to access this resource.",
@@ -110,137 +108,189 @@ angular.module('ngSailsBind').factory('$sailsBind', [
          */
         function bind(resourceName, $scope, subset) {
             var options = getOptions(resourceName, $scope, subset);
+            var defer = new $q.defer();
+            var url = getSailsApiRoute(options, null);
 
-            var defer_bind = new $q.defer();
             //1. Get the initial data into the newly created model.
-            var requestEnded = _get(options, '/' + options.prefix + options.model, subset);
-
-            requestEnded.then(function (data) {
-                if(!angular.isArray(data)){
+            _get(options, url, subset).then(function(data){
+                if (!angular.isArray(data)){
                     data=[data];
                 }
                 setObjectProperty(options.scope, options.scopeProperty, data);
                 addCollectionWatchersToSubitemsOf(data, options);
-                init();
-                defer_bind.resolve();
+                initModel(options);  //3. Watch the model for changes and send them to the backend using socket.
+                defer.resolve();
             });
 
             //2. Hook the socket events to update the model.
-            function onMessage(message) {
-                var elements = getObjectProperty(options.scope, options.scopeProperty, []),
-                    actions = {
-                        created: function () {
-                            getObjectProperty(options.scope, options.scopeProperty, []).push(message.data);
-                            return true;
-                        },
-                        updated: function () {
-                            var updatedElement = find(
-                                elements,
-                                function (element) {
-                                    return message.id.toString() === element.id.toString();
-                                }
-                            );
-                            if (updatedElement) {
-                                angular.extend(updatedElement, message.data);
-                                return true;
-                            }
-                            return false;
-                        },
-                        destroyed: function () {
-                            var deletedElement = find(
-                                elements,
-                                function (element) {
-                                    return message.id.toString() === element.id.toString();
-                                }
-                            );
-                            if (deletedElement) {
-                                elements.splice(elements.indexOf(deletedElement), 1);
-                                return true;
-                            }
-                            return false;
-                        }
-                    };
-                if (actions[message.verb]) {
-                    if (actions[message.verb]()){
-                        $timeout(function(){ options.scope.$apply(); });
-                    }
-                } else {
-                    $log.log('Unknown action »'+message.verb+'«');
-                }
-            }
-            $sails.on(options.model, onMessage);
-            options.scope.$on(options.model, function (event, message) {
+            $sails.on(options.model, onMessage.bind(this, options));
+            options.scope.$on(options.model, function (event, message){
                 if(options.scope.$id !== message.scope){
-                    onMessage(message);
+                    onMessage(options, message);
                 }
             });
 
-            //3. Watch the model for changes and send them to the backend using socket.
-            function init(){
-                options.scope.$watchCollection(options.scopeProperty, watcher);
-            };
+            return defer.promise;
+        }
 
-            function watcher(newValues, oldValues){
-                newValues = newValues || [];
-                oldValues = oldValues || [];
-
-                var addedElements =  diff(newValues, oldValues);
-                var removedElements = diff(oldValues, newValues);
-
-                removedElements.forEach(removeElement);
-                addedElements.forEach(addElement);
-
-                // Add Watchers to each added element
-                addCollectionWatchersToSubitemsOf(addedElements, options);
-            }
-
-            function addElement(item){
-                if ((!item.id) && (getConfigurationOption(options, "autoSave"))){ //if is a brand new item w/o id from the database
-                    var url = getSailsApiRoute(options, 'create');
-                    $sails.put(url, item, function(data, jwres){
-                        if(jwres.error){
-                            fireEvent('error', options, createErrorObject(jwres, 'put', url, item));
-                            fireEvent(options, createEventObject(options, item, 'error'));
-                        }else{
-                            url = getSailsApiRoute(options, null, data.id);
-                            _get(options, url).then(function(newData){
-                                angular.extend(item, newData);
-                                fireEvent('change', createChangeObject('created', options, item));
-                                fireEvent(options, createEventObject(options, item, 'created', angular.copy(item)));
-                            });
-                        }
-                    });
+        /*
+         * @description
+         * Convert the given parameters into an options object, which defines the user chosen options for the 
+         * current model binding.  Some properties of the object are calculated from those supplied and
+         * some generated.
+         *
+         * @private
+         * @param {string|object} resourceName          Either an object defining the bind requirements or the name of 
+         *                                              the resource in the backend to bind, can have prefix route.
+         * @param {string} resourceName.module          The sails model to bind to.
+         * @param {Object} [resourceName.scopeProperty] The property within scope to use (can be sub-property - use 
+         *                                              dots to declare specific sub-property).
+         * @param {Object} [resourceName.query]         The database query to use (will override the subset parameter).
+         * @param {Object} [resourceName.scope]         The scope object to use (will override the $scope parameter).
+         * @param {Object} [$scope]                     The scope where to attach the bounded model.
+         * @param {Object} [subset]                     The query parameters where you can filter and sort your 
+         *                                              initial model fill. check {@link http://beta.sailsjs.org
+         *                                              /#!documentation/reference/Blueprints/FindRecords.html|Blueprint
+         *                                              Queries} to see what you can send.
+         * @returns {Object}                            The options object.
+         */
+        function getOptions(options, $scope, subset){
+            if(angular.isObject(options)){
+                if(!options.hasOwnProperty('scopeProperty')){
+                    options.scopeProperty = options.model.split('/').pop() + 's';
+                }
+                if((!options.hasOwnProperty('scope'))  && ($scope !== undefined)){
+                    options.scope = $scope;
+                }
+                if((!options.hasOwnProperty('query'))  && (subset !== undefined)){
+                    subset = options.query;
+                }
+            }else{
+                options = {
+                    model: options,
+                    scopeProperty: options.split('/').pop() + 's',
+                    scope: $scope
+                };
+                if(subset !== undefined){
+                    options.query = subset;
                 }
             }
 
-            function removeElement(item){
-                var url = getSailsApiRoute(options, null, item.id);
-                _get(options, url).then(function(itemIsOnBackend){
-                    if(itemIsOnBackend && !itemIsOnBackend.error){
-                        fireEvent(options, createEventObject(options, item, 'destroyed'));
-                        fireEvent('change', createChangeObject('destroyed', options, item));
+            options.prefix = options.model.split('/');
+            if(options.length>1) {
+                options.model = options.prefix.splice(options.prefix.length - 1, 1);
+                options.prefix = options.prefix.join('/') + '/';
+            }else{
+                options.prefix = '';
+            }
 
-                        if(getConfigurationOption(options, "autoSave")){
-                            url = getSailsApiRoute(options, 'destroy', item.id);
-                            $sails.delete(url, function(res, jwres){
-                                if(jwres.error){
-                                    fireEvent('error', options, createErrorObject(jwres, 'delete', url, {}));
-                                    fireEvent(options, createEventObject(options, item, 'error'));
-                                }
-                            });
+            return options;
+        }
+
+        function onMessage(options, message) {
+            var elements = getObjectProperty(options.scope, options.scopeProperty, []);
+            var actions = {created: onCreated, updated: onUpdated, destroyed: onDestroyed};
+
+            if (actions[message.verb]) {
+                if (actions[message.verb](options, message, elements)){
+                    $timeout(function(){
+                        options.scope.$apply();
+                    });
+                }
+            } else {
+                $log.log('Unknown action »'+message.verb+'«');
+            }
+        }
+
+        function onCreated(options, message, elements){
+            getObjectProperty(options.scope, options.scopeProperty, []).push(message.data);
+            return true;
+        }
+
+        function onUpdated(options, message, elements){
+            var updatedElement = find(elements, function (element){
+                return message.id.toString() === element.id.toString();
+            });
+            if(updatedElement){
+                angular.extend(updatedElement, message.data);
+                return true;
+            }
+            return false;
+        }
+
+        function onDestroyed(options, message, elements){
+            var deletedElement = find(elements, function (element){
+                return message.id.toString() === element.id.toString();
+            });
+            if(deletedElement){
+                elements.splice(elements.indexOf(deletedElement), 1);
+                return true;
+            }
+            return false;
+        }
+
+        function initModel(options) {
+            options.scope.$watchCollection(options.scopeProperty, function(newValues, oldValues){
+                watcher(options, newValues, oldValues);
+            });
+        };
+
+        function watcher(options, newValues, oldValues){
+            newValues = newValues || [];
+            oldValues = oldValues || [];
+
+            var addedElements =  diff(newValues, oldValues);
+            var removedElements = diff(oldValues, newValues);
+
+            angular.forEach(removedElements, removeElementFromModel.bind(this, options));
+            angular.forEach(addedElements, addElementToModel.bind(this, options));
+
+            // Add Watchers to each added element
+            addCollectionWatchersToSubitemsOf(addedElements, options);
+        }
+
+        function removeElementFromModel(options, item){
+            var url = getSailsApiRoute(options, null, item.id);
+            _get(options, url).then(function (itemIsOnBackend) {
+                if(itemIsOnBackend && !itemIsOnBackend.error){
+                    fireEvent(options, createEventObject(options, item, 'destroyed'));
+                    fireEvent('change', createChangeObject('destroyed', options, item));
+                                
+                    url = getSailsApiRoute(options, 'destroy', item.id);
+                    $sails.delete(url, function(res, jwres){
+                        if(jwres.error){
+                            fireEvent('error', options, createErrorObject(jwres, 'delete', url, {}));
+                            fireEvent(options, createEventObject(options, item, 'error'));
                         }
+                    });
+                }
+            });
+        }
+
+        function addElementToModel(options, item){
+            if (!item.id) { //if is a brand new item w/o id from the database
+                var url = getSailsApiRoute(options, 'create');
+                $sails.put(url, item, function (data, jwres) {
+                    if(jwres.error){
+                        fireEvent('error', options, createErrorObject(jwres, 'put', url, item));
+                        fireEvent(options, createEventObject(options, item, 'error'));
+                    }else{
+                        url = getSailsApiRoute(options, null, data.id);
+                        _get(options, url).then(function (newData) {
+                            angular.extend(item, newData);
+                            fireEvent('change', createChangeObject('created', options, item));
+                            fireEvent(options, createEventObject(options, item, 'created', angular.copy(item)));
+                        });
                     }
                 });
             }
-
-            return defer_bind.promise;
         }
 
         function getSailsApiRoute(options, verb, id){
             var url = '/' + options.prefix + options.model;
-            url += ((verb)?'/'+verb:'');
-            url += ((id)?'?id='+id);
-
+            url += ((verb)?'/'+verb+'/':'/');
+            url += ((id)?'?id='+id:'');
+            
             return url;
         }
 
@@ -290,32 +340,14 @@ angular.module('ngSailsBind').factory('$sailsBind', [
          * @param {string} scopeProperty    The scope variable, which is changed and needs saving to sails (must be
          *                                  property, which already bound to Sails model).
          */
-        function save(scope, scopeProperty){
-            console.log("Ready to save -3"); 
-            if(bindings.hasOwnProperty(scopeProperty)){
-                console.log("Ready to save - 2"); 
-                if(bindingsbindings[scopeProperty].hasOwnProperty(scope.$id)){
-                    console.log("Ready to save -1"); 
-                    var options = bindings[scopeProperty][scope.$id];
-                    var url = getSailsApiRoute(options, 'update');
-                    if(options.hasOwnProperty('query')){
-                        if(options.query.hasOwnProperty('id')){
-                            url += '/' + options.query.id;
-                        }
-                    }
-
-                    console.log("Ready to save"); 
-                    /*$sails.post(url, getObjectProperty(scope, scopeProperty),
-                        function(res, jwres){
-                            if(jwres.error){
-                                fireEvent('error', options, createErrorObject(jwres, 'post', url, additional));
-                                fireEvent(options, createEventObject(options, oldValue, 'error'));
-                            }else{
-                                console.log("SAVED");  
-                            }
-                        }
-                    );*/
-                }
+        function save(scopeProperty){
+            var binding = getBinding(scope, scopeProperty);
+            if(binding){
+                watcher(
+                    binding.options,
+                    binding.data,
+                    getObjectProperty(binding.options.scope, binding.scopeProperty)
+                )
             }
         }
 
@@ -406,104 +438,39 @@ angular.module('ngSailsBind').factory('$sailsBind', [
          * @param {string} options.scopeProperty    The scope property to bind to
          */
         function addCollectionWatchersToSubitemsOf(addedElements, options) {
-            addedElements.forEach(function (item) {
-                options.scope.$watchCollection(
-                    options.scopeProperty + '[' + getObjectProperty(options.scope, options.scopeProperty, []).indexOf(item) + ']',
-                    function (newValue, oldValue){
+            addedElements.forEach(addedElement);
 
-                        if (oldValue && newValue) {
-                            if (!angular.equals(oldValue, newValue) && // is in the database and is not new
-                                oldValue.id === newValue.id && //not a shift
-                                oldValue.updatedAt === newValue.updatedAt) { //is not an update FROM backend
-                                fireEvent(
-                                    options,
-                                    createEventObject(options, oldValue, 'updated', angular.extend(
-                                        angular.copy(newValue),
-                                        { updatedAt: (new Date()).toISOString() }
-                                    ))
-                                );
-                                fireEvent('updated', createChangeObject('destroyed', options, oldValue));
+            function addedElement(item){
+                var itemIndex = getObjectProperty(options.scope, options.scopeProperty, []).indexOf(item);
+                var propertyName = options.scopeProperty+'['+itemIndex + ']';
+                options.scope.$watchCollection(propertyName,watcher);
+            }
 
-                                if(getConfigurationOption(options, "autoSave")){
-                                    var url = getSailsApiRoute(options, 'update', oldValue.id);
-                                    var additional = angular.copy(newValue);
-                                    $sails.post(url, additional,
-                                        function(res, jwres){
-                                            if(jwres.error){
-                                                fireEvent(
-                                                    'error', options, createErrorObject(jwres, 'post', url, additional)
-                                                );
-                                                fireEvent(options, createEventObject(options, oldValue, 'error'));
-                                            }
-                                        }
-                                    );
-                                }
-                                
+            function watcher(newValue, oldValue){
+                if(oldValue && newValue){
+                    if(
+                        !angular.equals(oldValue, newValue) && // is in the database and is not new
+                        oldValue.id === newValue.id && //not a shift
+                        oldValue.updatedAt === newValue.updatedAt
+                    ){ //is not an update FROM backend
+                        var eventData = angular.extend(
+                            angular.copy(newValue), {
+                                updatedAt: (new Date()).toISOString()
                             }
-                        }
+                        );
+                        fireEvent(options, createEventObject(options, oldValue, 'updated', eventData));
+                        fireEvent('updated', createChangeObject('updated', options, eventData));
+                        var url = getSailsApiRoute(options, 'update', oldValue.id);
+                        var additional = angular.copy(newValue);
+                        $sails.post(url, additional, function(res, jwres){
+                            if(jwres.error){
+                                fireEvent('error', options, createErrorObject(jwres, 'post', url, additional));
+                                fireEvent(options, createEventObject(options, oldValue, 'error'));
+                            }
+                        });
                     }
-                );
-            });
-        }
-
-        /*
-         * @description
-         * Convert the given parameters into an options object, which defines the user chosen options for the 
-         * current model binding.  Some properties of the object are calculated from those supplied and
-         * some generated.
-         *
-         * @private
-         * @param {string|object} resourceName          Either an object defining the bind requirements or the name of 
-         *                                              the resource in the backend to bind, can have prefix route.
-         * @param {string} resourceName.module          The sails model to bind to.
-         * @param {Object} [resourceName.scopeProperty] The property within scope to use (can be sub-property - use 
-         *                                              dots to declare specific sub-property).
-         * @param {Object} [resourceName.query]         The database query to use (will override the subset parameter).
-         * @param {Object} [resourceName.scope]         The scope object to use (will override the $scope parameter).
-         * @param {Object} [$scope]                     The scope where to attach the bounded model.
-         * @param {Object} [subset]                     The query parameters where you can filter and sort your 
-         *                                              initial model fill. check {@link http://beta.sailsjs.org
-         *                                              /#!documentation/reference/Blueprints/FindRecords.html|Blueprint
-         *                                              Queries} to see what you can send.
-         * @returns {Object}                            The options object.
-         */
-        function getOptions(options, $scope, subset){
-            if(angular.isObject(options)){
-                if(!options.hasOwnProperty('scopeProperty')){
-                    options.scopeProperty = options.model.split('/').pop() + 's';
-                }
-                if((!options.hasOwnProperty('scope'))  && ($scope !== undefined)){
-                    options.scope = $scope;
-                }
-                if((!options.hasOwnProperty('query'))  && (subset !== undefined)){
-                    subset = options.query;
-                }
-            }else{
-                options = {
-                    model: options,
-                    scopeProperty: options.split('/').pop() + 's',
-                    scope: $scope
-                };
-                if(subset !== undefined){
-                    options.query = subset;
                 }
             }
-
-            options.prefix = options.model.split('/');
-            if(options.length>1) {
-                options.model = options.prefix.splice(options.prefix.length - 1, 1);
-                options.prefix = options.prefix.join('/') + '/';
-            }else{
-                options.prefix = '';
-            }
-
-            bindings[options.scopeProperty] = (
-                (bindings.hasOwnProperty(options.scopeProperty))?
-                bindings[options.scopeProperty] : {}
-            );
-            bindings[options.scopeProperty][options.scope.$id] = options;
-
-            return options;
         }
 
         /**
