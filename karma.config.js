@@ -80,7 +80,9 @@ module.exports = function (config) {
             'lib/dependencies/angular/angular.js',
             'lib/dependencies/angular-mocks/angular-mocks.js',
             'test/mocks/*.js',
-            'lib/*.js',
+            'lib/ngSailsBind.module.js',
+            'lib/$sailsBindHelper.factory.js',
+            'lib/$sailsBind.factory.js',
             'test/**/*Spec.js'
         ],
 

@@ -1,4 +1,4 @@
-/*! angular-sails-bind - v1.0.5 - 2015-05-15
+/*! angular-sails-bind - v1.0.5 - 2015-05-16
 * https://github.com/diegopamio/angular-sails-bind
 * Copyright (c) 2015 Diego Pamio; Licensed MIT */
 /*! angular-sails-bind - v1.0.5 - 2015-05-05
@@ -22,6 +22,7 @@
  *
  * @return {object} Object of methods
  */
+
 try{ // This is so that angular-sails-bind works well with the module angular-sails.
     angular.module('ngSails');
     angular.module('ngSailsBind', ['ngSails']);
@@ -30,15 +31,164 @@ try{ // This is so that angular-sails-bind works well with the module angular-sa
         return io.socket;
     });
 }
+angular.module('ngSailsBind').factory('$sailsBindHelper', function(){
+    'use strict';
 
-/*
- * @ngdoc service
- * @kind object
- * @name $sailsBind
- */
+    /**
+     * @description
+     * Set a property within an object. Can set properties deep within objects using dot-notation.
+     *
+     * @todo    Unit Tests need to be more robust as this was passing but failing in real world use.  See
+     *          git:f3a56211273315ea73c267dc5c841b2293e1e446 for code, which should fail due to code error.
+     *
+     * @public
+     * @param {object} obj          Object to set property on.
+     * @param {string} property     The property to set use dot-notation to specify sub-properties.
+     * @param {mixed} value         The value to set property to.
+     */
+    function setObjectProperty(obj, property, value){
+        var parts = property.split('.');
+        var cObj = obj;
+        var lastPart = parts.pop();
+        while(parts.length){
+            cObj[parts[0]] = obj[parts[0]] || {};
+            cObj = obj[parts.shift()];
+        }
+        cObj[lastPart] = value;
+    }
+
+    /**
+     * @description
+     * Get a property value within an object.  Can retrieve from deeply within the object
+     * using dot-notation.
+     * 
+     * @public
+     * @param {object} obj              The object to a property value of.
+     * @param {string} property         The property to retrieve (use dot-notation to get from deep within object).
+     * @param {mixed} [defaultValue]    The default value to return if property not found or undefined.
+     * @return {mixed}
+     */
+    function getObjectProperty(obj, property, defaultValue){
+        property = ((angular.isArray(property))?property:property.split('.'));
+        while(property.length && (obj = obj[property.shift()])){}
+        return ((obj === undefined)?defaultValue:obj);
+    }
+
+    /**
+     * @description
+     * Array differencing function.
+     *
+     * @public
+     * @param {Array} ary1  The array to compare against.
+     * @param {Array} ary2  The array to compare with.
+     * @return {Array}
+     */
+    function diff(ary1, ary2) {
+        return ary1.filter(function (i) {
+            return ary2.indexOf(i) < 0;
+        });
+    }
+
+    /**
+     * @description
+     * ES6 Array method (Array.prototype.find()).  Returns a value in the array, if an element in the
+     * array satisfies the provided testing function. Otherwise undefined is returned.
+     * 
+     * @public
+     * @param {Array} ary           The array to use.
+     * @param {function} predicate  The testing function.
+     * @param {Object} [thisArg]    The context to use.
+     * @returns {mixed|undefined}
+     */
+    function find(ary, predicate, thisArg){
+        if (typeof predicate !== 'function') {
+            throw new TypeError('predicate must be a function');
+        }
+        var list = Object(ary);
+        var length = list.length >>> 0;
+        var value;
+
+        for (var i = 0; i < length; i++) {
+            value = list[i];
+            if (predicate.call(thisArg, value, i, list)) {
+                return value;
+            }
+        }
+        return undefined;
+    }
+
+    /*
+     * @description
+     * Perform a deep extend on the supplied objects.  Similar to angular.merge() in v1.4+ of angular.
+     * However, this does not merge fromthe prototype.
+     *
+     * @pulic
+     * @param {Object} dest     Object to merge into.
+     * @param {...Object}       Objects to merge into dest.
+     * @returns {Object}        Reference to dest object.
+     */
+    function merge(dest){
+        for(var n=1; n<arguments.length; n++){
+            for(var property in arguments[n]){
+                if(arguments[n].hasOwnProperty(property)){
+                    if(angular.isObject(arguments[n][property])){
+                        if(angular.isObject(dest[property])){
+                            merge(dest[property], arguments[n][property]);
+                            continue;
+                        }
+                    }
+                    dest[property] = arguments[n][property];
+                }
+            }
+        }
+
+        return dest;
+    }
+
+	/**
+     * @description
+     * Is the factory being executed with a Unit Test?  Useful for exporting private methods for testing.
+     *
+     * @private
+     * @return {boolean}
+     */
+    function isUnitTest(){
+        var global;
+
+        /* jshint ignore:start */
+        try {
+            global = Function('return this')() || (42, eval)('this');
+        }catch(e){
+            global = window;
+        }
+        /* jshint ignore:end */
+
+        return ((global.hasOwnProperty('describe')) && (global.hasOwnProperty('it')));
+    }
+
+    var angularSailsBindHelper = {
+        'setObjectProperty': setObjectProperty,
+        'getObjectProperty': getObjectProperty,
+        'find': find,
+        'diff': diff,
+        'merge': merge
+    };
+
+    if(isUnitTest()){
+        //
+    }
+
+    return angularSailsBindHelper;
+});
 angular.module('ngSailsBind').factory('$sailsBind', [
-    '$q', '$rootScope', '$timeout', '$log', '$sails',
-    function ($q, $rootScope, $timeout, $log, $sails) {
+    '$q',
+    '$rootScope',
+    '$timeout',
+    '$log',
+    '$sails',
+    '$sailsBindHelper',
+
+    function ($q, $rootScope, $timeout, $log, $sails, $sailsBindHelper){
         'use strict';
 
         var configuration = {
@@ -121,7 +271,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
                 var binding = getBinding(options.scope, options.scopeProperty);
                 binding.data = data;
                 binding.updatedData = angular.copy(data);
-                setObjectProperty(options.scope, options.scopeProperty, data);
+                $sailsBindHelper.setObjectProperty(options.scope, options.scopeProperty, data);
                 addCollectionWatchersToSubitemsOf(data, options);
                 initModel(options);  //3. Watch the model for changes and send them to the backend using socket.
                 defer.resolve();
@@ -201,7 +351,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             var autoUpdate = getConfigurationOption('autoUpdate', options);
 
             if(autoUpdate){
-                elements = getObjectProperty(options.scope, options.scopeProperty, []);
+                elements = $sailsBindHelper.getObjectProperty(options.scope, options.scopeProperty, []);
             }else{
                 var binding = getBinding(options.scope, options.scopeProperty);
                 if(binding){
@@ -226,7 +376,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
         }
 
         function onUpdated(options, message, elements){
-            var updatedElement = find(elements, function (element){
+            var updatedElement = $sailsBindHelper.find(elements, function (element){
                 return message.id.toString() === element.id.toString();
             });
             if(updatedElement){
@@ -238,7 +388,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
         }
 
         function onDestroyed(options, message, elements){
-            var deletedElement = find(elements, function (element){
+            var deletedElement = $sailsBindHelper.find(elements, function (element){
                 return message.id.toString() === element.id.toString();
             });
             if(deletedElement){
@@ -258,8 +408,8 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             newValues = newValues || [];
             oldValues = oldValues || [];
 
-            var addedElements =  diff(newValues, oldValues);
-            var removedElements = diff(oldValues, newValues);
+            var addedElements =  $sailsBindHelper.diff(newValues, oldValues);
+            var removedElements = $sailsBindHelper.diff(oldValues, newValues);
 
             angular.forEach(removedElements, removeElementFromModel.bind(this, options));
             angular.forEach(addedElements, addElementToModel.bind(this, options));
@@ -346,7 +496,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
          * @param {object} userConfig       The config object to use (only overwrites supllied properties).
          */
         function config(userConfig){
-            merge(configuration, userConfig);
+            $sailsBindHelper.merge(configuration, userConfig);
         }
 
         /*
@@ -368,7 +518,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             if(binding){
                 var options = angular.copy(binding.options);
                 options.autoSave = true;
-                watcher(options, binding.data, getObjectProperty(scope, scopeProperty))
+                watcher(options, binding.data, $sailsBindHelper.getObjectProperty(scope, scopeProperty))
             }
         }
 
@@ -377,7 +527,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             if(binding){
                 var options = angular.copy(binding.options);
                 options.autoUpdate = true;
-                watcher(options, binding.updatedData, getObjectProperty(scope, scopeProperty))
+                watcher(options, binding.updatedData, $sailsBindHelper.getObjectProperty(scope, scopeProperty))
             }
         }
 
@@ -486,7 +636,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             addedElements.forEach(addedElement);
 
             function addedElement(item){
-                var itemIndex = getObjectProperty(options.scope, options.scopeProperty, []).indexOf(item);
+                var itemIndex = $sailsBindHelper.getObjectProperty(options.scope, options.scopeProperty, []).indexOf(item);
                 var propertyName = options.scopeProperty+'['+itemIndex + ']';
                 options.scope.$watchCollection(propertyName,watcher);
             }
@@ -533,10 +683,10 @@ angular.module('ngSailsBind').factory('$sailsBind', [
          * @returns {mixed}                 The actual config option value.
          */
         function getConfigurationOption(propertyName, options){
-            return getObjectProperty(
+            return $sailsBindHelper.getObjectProperty(
                 options,
                 propertyName,
-                getObjectProperty(configuration, propertyName)
+                $sailsBindHelper.getObjectProperty(configuration, propertyName)
             );
         }
 
@@ -687,117 +837,6 @@ angular.module('ngSailsBind').factory('$sailsBind', [
             return ((global.hasOwnProperty('describe')) && (global.hasOwnProperty('it')));
         }
 
-        /**
-         * @description
-         * Set a property within an object. Can set properties deep within objects using dot-notation.
-         *
-         * @todo    Unit Tests need to be more robust as this was passing but failing in real world use.  See
-         *          git:f3a56211273315ea73c267dc5c841b2293e1e446 for code, which should fail due to code error.
-         *
-         * @private
-         * @param {object} obj          Object to set property on.
-         * @param {string} property     The property to set use dot-notation to specify sub-properties.
-         * @param {mixed} value         The value to set property to.
-         */
-        function setObjectProperty(obj, property, value){
-            var parts = property.split('.');
-            var cObj = obj;
-            var lastPart = parts.pop();
-            while(parts.length){
-                cObj[parts[0]] = obj[parts[0]] || {};
-                cObj = obj[parts.shift()];
-            }
-            cObj[lastPart] = value;
-        }
-
-        /**
-         * @description
-         * Get a property value within an object.  Can retrieve from deeply within the object
-         * using dot-notation.
-         * 
-         * @private
-         * @param {object} obj              The object to a property value of.
-         * @param {string} property         The property to retrieve (use dot-notation to get from deep within object).
-         * @param {mixed} [defaultValue]    The default value to return if property not found or undefined.
-         * @return {mixed}
-         */
-        function getObjectProperty(obj, property, defaultValue){
-            property = ((angular.isArray(property))?property:property.split('.'));
-            while(property.length && (obj = obj[property.shift()])){}
-            return ((obj === undefined)?defaultValue:obj);
-        }
-
-        /**
-         * @description
-         * Array differencing function.
-         *
-         * @private
-         * @param {Array} ary1  The array to compare against.
-         * @param {Array} ary2  The array to compare with.
-         * @return {Array}
-         */
-        function diff(ary1, ary2) {
-            return ary1.filter(function (i) {
-                return ary2.indexOf(i) < 0;
-            });
-        }
-
-        /**
-         * @description
-         * ES6 Array method (Array.prototype.find()).  Returns a value in the array, if an element in the
-         * array satisfies the provided testing function. Otherwise undefined is returned.
-         * 
-         * @private
-         * @param {Array} ary           The array to use.
-         * @param {function} predicate  The testing function.
-         * @param {Object} [thisArg]    The context to use.
-         * @returns {mixed|undefined}
-         */
-        function find(ary, predicate, thisArg){
-            if (typeof predicate !== 'function') {
-                throw new TypeError('predicate must be a function');
-            }
-            var list = Object(ary);
-            var length = list.length >>> 0;
-            var value;
-
-            for (var i = 0; i < length; i++) {
-                value = list[i];
-                if (predicate.call(thisArg, value, i, list)) {
-                    return value;
-                }
-            }
-            return undefined;
-        }
-
-        /*
-         * @description
-         * Perform a deep extend on the supplied objects.  Similar to angular.merge() in v1.4+ of angular.
-         * However, this does not merge fromthe prototype.
-         *
-         * @private
-         * @param {Object} dest     Object to merge into.
-         * @param {...Object}       Objects to merge into dest.
-         * @returns {Object}        Reference to dest object.
-         */
-        function merge(dest){
-            for(var n=1; n<arguments.length; n++){
-                for(var property in arguments[n]){
-                    if(arguments[n].hasOwnProperty(property)){
-                        if(angular.isObject(arguments[n][property])){
-                            if(angular.isObject(dest[property])){
-                                merge(dest[property], arguments[n][property]);
-                                continue;
-                            }
-                        }
-                        dest[property] = arguments[n][property];
-                    }
-                }
-            }
-
-            return dest;
-        }
-
         var angularSailsBind = {
             'bind': bind,
             'on': on,
@@ -807,8 +846,7 @@ angular.module('ngSailsBind').factory('$sailsBind', [
         };
 
         if(isUnitTest()){
-            angularSailsBind['setObjectProperty'] = setObjectProperty;
-            angularSailsBind['getObjectProperty'] = getObjectProperty;
+            //
         }
 
         return angularSailsBind;

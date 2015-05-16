@@ -10,10 +10,12 @@ describe('the angular sailsjs bind service', function () {
         inject(function (_$sailsBind_) {
             $sailsBind = _$sailsBind_;
         });
+        inject(function (_$sailsBindHelper_) {
+            $sailsBindHelper = _$sailsBindHelper_;
+        });
         inject(function (_$rootScope_) {
             $rootScope = _$rootScope_;
         });
-
         inject(function ($injector) {
             $timeout = $injector.get('$timeout');
             //$timeout.flush();
@@ -23,42 +25,8 @@ describe('the angular sailsjs bind service', function () {
         });
     });
 
-    it('should have a bind function', function () {
+    it('should have defined set of exports', function () {
         expect(angular.isFunction($sailsBind.bind)).to.be.true;
-    });
-
-    describe('private functions should work', function(){
-        // It is debatable whether testing of private methods is good practice or not.  In this case it is useful to
-        // test some of the internal functions so they can be easily refactored (and their robustness tested).  Some
-        // functions are core to a module but you do not wish to export them publically.
-
-        it('setObjectProperty should set properties at any object level', function () {
-            var obj = {};
-            $sailsBind.setObjectProperty(obj, "myTestProperty", 1);
-            expect(obj.myTestProperty).to.equal(1);
-
-            $sailsBind.setObjectProperty(obj, "myTestProperty2.myTestSubProperty", 1);
-            expect(obj.myTestProperty2).to.be.a("object");
-            expect(obj.myTestProperty2.myTestSubProperty).to.equal(1);
-
-            $sailsBind.setObjectProperty(obj, "myTestProperty.myTestSubProperty", 1);
-            expect(obj.myTestProperty2).to.be.a("object");
-            expect(obj.myTestProperty2.myTestSubProperty).to.equal(1);
-        });
-
-        it('getObjectProperty should get properties at any object level', function () {
-            var obj = {
-                "myTestProperty": 1,
-                "myTestProperty2": {
-                    "myTestSubProperty": 1
-                }
-            };
-
-            expect($sailsBind.getObjectProperty(obj, "myTestProperty")).to.equal(1);
-            expect($sailsBind.getObjectProperty(obj, "myTestProperty2.myTestSubProperty")).to.equal(1);
-            expect($sailsBind.getObjectProperty(obj, "myTestProperty2.myTestSubProperty2")).to.equal(undefined);
-            expect($sailsBind.getObjectProperty(obj, "myTestProperty2.myTestSubProperty2", 1)).to.equal(1);
-        });
     });
 
     describe('the bind function', function () {
@@ -248,18 +216,18 @@ describe('the angular sailsjs bind service', function () {
             $sailsBind.bind({
                 model: modelName,
                 scopeProperty: scopeProperty
-            }, $rootScope);
+            }, $rootScope, $sailsBindHelper);
             $timeout.flush();
         });
 
         it('should create a model named ' + scopeProperty, function () {
-            expect($sailsBind.getObjectProperty($rootScope, scopeProperty)).to.be.an("array");
+            expect($sailsBindHelper.getObjectProperty($rootScope, scopeProperty)).to.be.an("array");
         });
 
         it('should load the model with the contents from the backend', function () {
             expect(io.socket.requestCalled.url).to.equal("/" + modelName + "/");
 
-            expect($sailsBind.getObjectProperty($rootScope, scopeProperty)).to.deep.equal(defaultData);
+            expect($sailsBindHelper.getObjectProperty($rootScope, scopeProperty)).to.deep.equal(defaultData);
         });
     });
 

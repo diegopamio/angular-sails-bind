@@ -14,13 +14,21 @@ module.exports = function (grunt) {
             '* Copyright (c) <%= grunt.template.today("yyyy") %> <%= pkg.author.name %>;' +
             ' Licensed <%= _.pluck(pkg.licenses, "type").join(", ") %> */\n',
         // Task configuration.
+        clean: {
+            force: true,
+            dist: ["dist/"]
+        },
         concat: {
             options: {
                 banner: '<%= banner %>',
                 stripBanners: true
             },
             dist: {
-                src: ['lib/<%= pkg.name %>.js', 'lib/utils.js'],
+                src: [
+                    'lib/ngSailsBind.module.js',
+                    'lib/$sailsBindHelper.factory.js',
+                    'lib/$sailsBind.factory.js'
+                ],
                 dest: 'dist/<%= pkg.name %>.js'
             }
         },
@@ -43,7 +51,10 @@ module.exports = function (grunt) {
         },
         jshint: {
             all: [
-                'lib/<%= pkg.name %>.js'
+                'lib/ngSailsBind.module.js',
+                'lib/$sailsBindHelper.factory.js',
+                'lib/$sailsBind.factory.js',
+                'test/*.Spec.js'
             ],
             options: {
                 strict: true,
@@ -83,7 +94,12 @@ module.exports = function (grunt) {
         },
         watch: {
             js: {
-                files: 'lib/<%= pkg.name %>.js',
+                files: [
+                    'lib/ngSailsBind.module.js',
+                    'lib/$sailsBindHelper.factory.js',
+                    'lib/$sailsBind.factory.js',
+                    'test/*.Spec.js'
+                ],
                 tasks: ['jshint', 'karma'],
                 options: {
                     spawn: false,
@@ -93,6 +109,7 @@ module.exports = function (grunt) {
     });
 
     // These plugins provide necessary tasks.
+    grunt.loadNpmTasks('grunt-contrib-clean');
     grunt.loadNpmTasks('grunt-contrib-concat');
     grunt.loadNpmTasks('grunt-contrib-uglify');
     grunt.loadNpmTasks('grunt-contrib-jshint');
@@ -108,6 +125,6 @@ module.exports = function (grunt) {
         var dgeni = new Dgeni([require('./dgeni/dgeni')]);
         dgeni.generate().then(done);
     });
-    grunt.registerTask('default', ['concat', 'uglify', 'karma', 'dgeni', 'coveralls']);
+    grunt.registerTask('default', ['clean:dist', 'concat', 'uglify', 'karma', 'dgeni', 'coveralls']);
     grunt.registerTask('release', ['bump-only', 'default','changelog', 'dgeni', 'bump-commit']);
 };

@@ -24,7 +24,7 @@ module.exports = new Package('dgeni-example', [
   readFilesProcessor.sourceFiles = [
     {
       // Process all js files in `src` and its subfolders ...
-      include: 'lib/angular-sails-bind.js',
+      include: ['lib/ngSailsBind.module.js', 'lib/$sailsBindHelper.factory.js', 'lib/$sailsBind.factory.js'],
       // ... except for this one!
       //exclude: '',
       // When calculating the relative path to these files use this as the base path.
