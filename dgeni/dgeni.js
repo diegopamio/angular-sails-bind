@@ -1,6 +1,7 @@
+/*global require, module, __dirname */
+/*jshint strict:false */
 // Canonical path provides a consistent path (i.e. always forward slashes) across different OSes
 var path = require('canonical-path');
-
 var Package = require('dgeni').Package;
 
 // Create and export a new Dgeni package called dgeni-example. This package depends upon

@@ -1,5 +1,4 @@
-/*global module:false*/
-/*global process:false*/
+/*global module, process */
 // Karma configuration
 // Generated on Thu May 29 2014 22:32:20 GMT-0300 (ART)
 
@@ -37,10 +36,10 @@ module.exports = function (config) {
             }
         },
         customLaunchers = customLaunchersByEnvironment[environment],
-        reportersByEnvironment = {
+        /*reportersByEnvironment = {
             test: ['coverage', 'mocha', 'html', 'saucelabs'],
             dev: ['mocha']
-        },
+        },*/
         reporters = ['progress'],
         //reporters = reportersByEnvironment[environment],
         browsersByEnvironment = {

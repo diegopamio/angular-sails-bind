@@ -1,41 +1,45 @@
+/*jshint expr: true*/
+/*global describe, it, beforeEach, module, inject, expect, io */
+
 /**
  * Created by dpamio on 29/05/14.
  */
-var app;
-describe('the angular sailsjs bind service', function () {
-    beforeEach(function () {
+
+var app, $sailsBind, $sailsBindHelper, $rootScope, $q, $timeout;
+describe('the angular sailsjs bind service', function (){
+    'use strict';
+
+    beforeEach(function (){
         //setup the driver angular app.
         app = angular.module("testApp", ['ngSailsBind']);
         module('testApp');
-        inject(function (_$sailsBind_) {
+
+        inject(function($injector, _$timeout_, _$sailsBind_, _$sailsBindHelper_, _$rootScope_, _$q_){
             $sailsBind = _$sailsBind_;
-        });
-        inject(function (_$sailsBindHelper_) {
             $sailsBindHelper = _$sailsBindHelper_;
-        });
-        inject(function (_$rootScope_) {
             $rootScope = _$rootScope_;
-        });
-        inject(function ($injector) {
-            $timeout = $injector.get('$timeout');
+            $q = _$q_;
+            $timeout = _$timeout_;
             //$timeout.flush();
         });
-        inject(function (_$q_) {
-            $q = _$q_;
-        });
     });
 
-    it('should have defined set of exports', function () {
+    it('should have defined set of exports', function(){
         expect(angular.isFunction($sailsBind.bind)).to.be.true;
+        expect(angular.isFunction($sailsBind.on)).to.be.true;
+        expect(angular.isFunction($sailsBind.save)).to.be.true;
+        expect(angular.isFunction($sailsBind.update)).to.be.true;
+        expect(angular.isFunction($sailsBind.config)).to.be.true;
+        expect(angular.isFunction($sailsBind.default)).to.be.true;
     });
 
-    describe('the bind function', function () {
+    describe('the bind function', function(){
         var modelName = "myModelItem";
         var scopeProperty = modelName + "s";
         //scopeProperty = modelName + ".s";
         var defaultData;
 
-        beforeEach(function () {
+        beforeEach(function(){
             defaultData = [
                 {'id': '1', 'modelAttribute1': "string", 'modelAttribute2': 'another string'},
                 {'id': '2', 'modelAttribute1': "4", 'modelAttribute2': '10'}
@@ -49,23 +53,23 @@ describe('the angular sailsjs bind service', function () {
             $timeout.flush();
         });
 
-        it('should create a model named ' + modelName, function () {
+        it('should create a model named ' + modelName, function(){
             expect($rootScope[scopeProperty]).to.be.an("array");
         });
-        it('should load the model with the contents from the backend', function () {
+        it('should load the model with the contents from the backend', function(){
             expect(io.socket.requestCalled.url).to.equal("/" + modelName + "/");
 
             expect($rootScope[scopeProperty]).to.deep.equal(defaultData);
         });
 
-        it('should update the model when a new element is ADDED in the backend', function () {
+        it('should update the model when a new element is ADDED in the backend', function(){
             //Simulate an "on-created" event sent from the server for this model
             io.socket.triggerOn(modelName, 'created', {'id': '3', 'modelAttribute1': "new", 'modelAttribute2': 'data'});
             $timeout.flush();
             expect($rootScope[scopeProperty]).to.have.length(3);
         });
 
-        it('should update the model when an  element is DELETED in the backend', function () {
+        it('should update the model when an  element is DELETED in the backend', function(){
             var removedData = {'id': 2};
 
             //Mock server so it doesn't return item #2 anymore.
@@ -83,7 +87,7 @@ describe('the angular sailsjs bind service', function () {
             expect($rootScope[scopeProperty]).to.have.length(1);
         });
 
-        it('should update the model when an is MODIFIED in the backend', function () {
+        it('should update the model when an is MODIFIED in the backend', function(){
             var modifiedItem = {'id': '2', 'modelAttribute1': "4", 'modelAttribute2': 'not10'};
 
             //Simulate someone has modified item 2 in the database.
@@ -93,7 +97,7 @@ describe('the angular sailsjs bind service', function () {
             expect($rootScope[scopeProperty][1]).to.deep.equal(modifiedItem);
         });
 
-        it('should persist in the backend when a new element is ADDED in the client', function () {
+        it('should persist in the backend when a new element is ADDED in the client', function(){
             var newElementCreatedInClient = {name: "newElement"},
                 newElementAsReturnedByBackend = {id: 3, name: "newElement"};
 
@@ -118,7 +122,7 @@ describe('the angular sailsjs bind service', function () {
             expect($rootScope[scopeProperty][2]).to.deep.equal(newElementAsReturnedByBackend);
         });
 
-        it('should persist in the backend when an element is REMOVED in the client', function () {
+        it('should persist in the backend when an element is REMOVED in the client', function(){
             var removedData = $rootScope[scopeProperty].pop();
 
             //Setup backend to simulate the item wasn't removed there yet.
@@ -135,7 +139,7 @@ describe('the angular sailsjs bind service', function () {
             expect(io.socket.deleteCalled.url).to.equal("/" + modelName + "/destroy/?id=" + removedData.id);
         });
 
-        it('should persist in the backend when a new element is MODIFIED in the client', function () {
+        it('should persist in the backend when a new element is MODIFIED in the client', function(){
             var dataToModify = $rootScope[scopeProperty][1];
 
             //Setup backend to simulate the item wasn't removed there yet.
@@ -153,7 +157,7 @@ describe('the angular sailsjs bind service', function () {
             expect(io.socket.postCalled.data).to.deep.equal(dataToModify);
         });
 
-        it('should  filter the initial model load using the criteria specified in the third argument.', function () {
+        it('should  filter the initial model load using the criteria specified in the third argument.', function(){
             var query = {'modelAttribute1': "4"};
             //Do the binding.
             $sailsBind.bind(modelName, $rootScope, query);
@@ -170,7 +174,7 @@ describe('the angular sailsjs bind service', function () {
         var scopeProperty = "myProperty";
         var defaultData;
 
-        beforeEach(function () {
+        beforeEach(function(){
             defaultData = [
                 {'id': '1', 'modelAttribute1': "string", 'modelAttribute2': 'another string'},
                 {'id': '2', 'modelAttribute1': "4", 'modelAttribute2': '10'}
@@ -187,11 +191,11 @@ describe('the angular sailsjs bind service', function () {
             $timeout.flush();
         });
 
-        it('should create a model named ' + scopeProperty, function () {
+        it('should create a model named ' + scopeProperty, function(){
             expect($rootScope[scopeProperty]).to.be.an("array");
         });
 
-        it('should load the model with the contents from the backend', function () {
+        it('should load the model with the contents from the backend', function(){
             expect(io.socket.requestCalled.url).to.equal("/" + modelName + "/");
 
             expect($rootScope[scopeProperty]).to.deep.equal(defaultData);
@@ -203,7 +207,7 @@ describe('the angular sailsjs bind service', function () {
         var scopeProperty = "myProperty.mySubProperty";
         var defaultData;
 
-        beforeEach(function () {
+        beforeEach(function(){
             defaultData = [
                 {'id': '1', 'modelAttribute1': "string", 'modelAttribute2': 'another string'},
                 {'id': '2', 'modelAttribute1': "4", 'modelAttribute2': '10'}
@@ -220,23 +224,23 @@ describe('the angular sailsjs bind service', function () {
             $timeout.flush();
         });
 
-        it('should create a model named ' + scopeProperty, function () {
+        it('should create a model named ' + scopeProperty, function(){
             expect($sailsBindHelper.getObjectProperty($rootScope, scopeProperty)).to.be.an("array");
         });
 
-        it('should load the model with the contents from the backend', function () {
+        it('should load the model with the contents from the backend', function(){
             expect(io.socket.requestCalled.url).to.equal("/" + modelName + "/");
 
             expect($sailsBindHelper.getObjectProperty($rootScope, scopeProperty)).to.deep.equal(defaultData);
         });
     });
 
-    describe('the bind function with prefix', function () {
+    describe('the bind function with prefix', function(){
         var modelName = "myModelItem";
         var defaultData;
         var scopeProperty = modelName + "s";
 
-        beforeEach(function () {
+        beforeEach(function(){
             defaultData = [
                 {'id': '1', 'modelAttribute1': "string", 'modelAttribute2': 'another string'},
                 {'id': '2', 'modelAttribute1': "4", 'modelAttribute2': '10'}
@@ -250,23 +254,23 @@ describe('the angular sailsjs bind service', function () {
             $timeout.flush();
         });
 
-        it('should create a model named ' + modelName, function () {
+        it('should create a model named ' + modelName, function(){
             expect($rootScope[scopeProperty]).to.be.an("array");
         });
-        it('should load the model with the contents from the backend', function () {
+        it('should load the model with the contents from the backend', function(){
             expect(io.socket.requestCalled.url).to.equal("/api/" + modelName + "/");
 
             expect($rootScope[scopeProperty]).to.deep.equal(defaultData);
         });
 
-        it('should update the model when a new element is ADDED in the backend', function () {
+        it('should update the model when a new element is ADDED in the backend', function(){
             //Simulate an "on-created" event sent from the server for this model
             io.socket.triggerOn(modelName, 'created', {'id': '3', 'modelAttribute1': "new", 'modelAttribute2': 'data'});
             $timeout.flush();
             expect($rootScope[scopeProperty]).to.have.length(3);
         });
 
-        it('should update the model when an  element is DELETED in the backend', function () {
+        it('should update the model when an  element is DELETED in the backend', function(){
             var removedData = {'id': 2};
 
             //Mock server so it doesn't return item #2 anymore.
@@ -284,7 +288,7 @@ describe('the angular sailsjs bind service', function () {
             expect($rootScope[scopeProperty]).to.have.length(1);
         });
 
-        it('should update the model when an is MODIFIED in the backend', function () {
+        it('should update the model when an is MODIFIED in the backend', function(){
             var modifiedItem = {'id': '2', 'modelAttribute1': "4", 'modelAttribute2': 'not10'};
 
             //Simulate someone has modified item 2 in the database.
@@ -294,7 +298,7 @@ describe('the angular sailsjs bind service', function () {
             expect($rootScope[scopeProperty][1]).to.deep.equal(modifiedItem);
         });
 
-        it('should persist in the backend when a new element is ADDED in the client', function () {
+        it('should persist in the backend when a new element is ADDED in the client', function(){
             var newElementCreatedInClient = {name: "newElement"},
                 newElementAsReturnedByBackend = {id: 3, name: "newElement"};
 
@@ -319,7 +323,7 @@ describe('the angular sailsjs bind service', function () {
             expect($rootScope[scopeProperty][2]).to.deep.equal(newElementAsReturnedByBackend);
         });
 
-        it('should persist in the backend when an element is REMOVED in the client', function () {
+        it('should persist in the backend when an element is REMOVED in the client', function(){
             var removedData = $rootScope[scopeProperty].pop();
 
             //Setup backend to simulate the item wasn't removed there yet.
@@ -336,7 +340,7 @@ describe('the angular sailsjs bind service', function () {
             expect(io.socket.deleteCalled.url).to.equal("/api/" + modelName + "/destroy/?id=" + removedData.id);
         });
 
-        it('should persist in the backend when a new element is MODIFIED in the client', function () {
+        it('should persist in the backend when a new element is MODIFIED in the client', function(){
             var dataToModify = $rootScope[scopeProperty][1];
 
             //Setup backend to simulate the item wasn't removed there yet.
@@ -354,7 +358,7 @@ describe('the angular sailsjs bind service', function () {
             expect(io.socket.postCalled.data).to.deep.equal(dataToModify);
         });
 
-        it('should  filter the initial model load using the criteria specified in the third argument.', function () {
+        it('should  filter the initial model load using the criteria specified in the third argument.', function(){
             var query = {'modelAttribute1': "4"};
             //Do the binding.
             $sailsBind.bind("api/" + modelName, $rootScope, query);
@@ -366,12 +370,12 @@ describe('the angular sailsjs bind service', function () {
         });
     });
 
-    describe('the bind function with prefix, when the server returns an object instead of an array', function () {
+    describe('the bind function with prefix, when the server returns an object instead of an array', function(){
         var modelName = "myModelItem";
         var defaultData;
         var scopeProperty = modelName + "s";
 
-        beforeEach(function () {
+        beforeEach(function(){
             defaultData =
             {'id': '1', 'modelAttribute1': "string", 'modelAttribute2': 'another string'};
 
@@ -383,18 +387,18 @@ describe('the angular sailsjs bind service', function () {
             $timeout.flush();
         });
 
-        it('should still create an array in the scope', function () {
+        it('should still create an array in the scope', function(){
             expect($rootScope[scopeProperty]).to.be.an("array");
         });
     });
 
 
-    describe('the bind function, when the server returns an object instead of an array', function () {
+    describe('the bind function, when the server returns an object instead of an array', function(){
         var modelName = "myModelItem";
         var defaultData;
         var scopeProperty = modelName + "s";
 
-        beforeEach(function () {
+        beforeEach(function(){
             defaultData =
             {'id': '1', 'modelAttribute1': "string", 'modelAttribute2': 'another string'};
 
@@ -406,7 +410,7 @@ describe('the angular sailsjs bind service', function () {
             $timeout.flush();
         });
 
-        it('should still create an array in the scope', function () {
+        it('should still create an array in the scope', function(){
             expect($rootScope[scopeProperty]).to.be.an("array");
         });
     });

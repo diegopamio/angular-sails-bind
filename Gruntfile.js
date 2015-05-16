@@ -1,4 +1,4 @@
-/*global module:false*/
+/*global module, require*/
 
 var Dgeni = require('dgeni');
 
@@ -51,6 +51,9 @@ module.exports = function (grunt) {
         },
         jshint: {
             all: [
+                'Gruntfile.js',
+                'karma.config.js',
+                'dgeni/dgeni.js',
                 'lib/ngSailsBind.module.js',
                 'lib/$sailsBindHelper.factory.js',
                 'lib/$sailsBind.factory.js',
@@ -95,14 +98,18 @@ module.exports = function (grunt) {
         watch: {
             js: {
                 files: [
+                    'Gruntfile.js',
+                    'karma.config.js',
+                    'dgeni/dgeni.js',
                     'lib/ngSailsBind.module.js',
                     'lib/$sailsBindHelper.factory.js',
                     'lib/$sailsBind.factory.js',
                     'test/*.Spec.js'
                 ],
-                tasks: ['jshint', 'karma'],
+                tasks: ['karma:unit', 'jshint:all'],
                 options: {
                     spawn: false,
+                    reload: true
                 }
             }
         }
