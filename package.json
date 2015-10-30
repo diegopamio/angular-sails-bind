@@ -12,7 +12,7 @@
     "bind"
   ],
   "homepage": "https://github.com/diegopamio/angular-sails-bind",
-  "main": "dist/angular-sails-bind.js",
+  "main": "index.js",
   "bugs": "https://github.com/diegopamio/angular-sails-bind/issues",
   "licenses": [
     {
@@ -66,6 +66,6 @@
     "mocha-lcov-reporter": "0.0.1"
   },
   "scripts": {
-    "postinstall": "node_modules/.bin/bower install"
+    "build": "node_modules/.bin/grunt default"
   }
 }

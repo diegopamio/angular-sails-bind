@@ -91,5 +91,6 @@ module.exports = function (grunt) {
 
     // Default task.
     grunt.registerTask('default', ['concat', 'uglify', 'karma', 'coveralls']);
+    grunt.registerTask('build', ['concat', 'uglify']);
     grunt.registerTask('release', ['bump-only', 'default','changelog', 'bump-commit']);
 };
